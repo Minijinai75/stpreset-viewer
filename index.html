@@ -3477,19 +3477,7 @@
         const linguipediaVocabs = [];  // 簡體形式，opencc 之前
         const taiwanChinaVocabs = [];  // 繁體形式，opencc 之後
 
-        // 根據註解分離詞庫
-        let isLinguipedia = false;
-        let isTaiwanChina = false;
-
-        taiwanVocabs.forEach((vocab, index) => {
-            // 檢測分隔註解
-            if (index < taiwanVocabs.length - 1) {
-                const nextComment = taiwanVocabs[index + 1];
-                // 這裡我們簡化處理：前半部分是 linguipedia，後半部分是 taiwan_china
-            }
-        });
-
-        // 簡化版：根據索引分離（前 1251 條是 linguipedia，後 762 條是 taiwan_china）
+        // 根據索引分離（前 1251 條是 linguipedia，後 762 條是 taiwan_china）
         for (let i = 0; i < taiwanVocabs.length; i++) {
             if (i < 1251) {
                 linguipediaVocabs.push(taiwanVocabs[i]);
@@ -3497,6 +3485,13 @@
                 taiwanChinaVocabs.push(taiwanVocabs[i]);
             }
         }
+
+        // 初始化確認
+        console.log('詞庫初始化完成:', {
+            total: taiwanVocabs.length,
+            linguipedia: linguipediaVocabs.length,
+            taiwanChina: taiwanChinaVocabs.length
+        });
 
         // 檢測文本中文字比例
         function getChineseRatio(text) {
@@ -3507,10 +3502,15 @@
 
         // 應用詞庫替換
         function applyVocabReplacement(text, vocabs) {
+            if (!vocabs || !Array.isArray(vocabs) || vocabs.length === 0) {
+                return text;
+            }
             let result = text;
             vocabs.forEach(vocab => {
-                const regex = new RegExp(vocab.cn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                result = result.replace(regex, vocab.tw);
+                if (vocab && vocab.cn && vocab.tw) {
+                    const regex = new RegExp(vocab.cn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                    result = result.replace(regex, vocab.tw);
+                }
             });
             return result;
         }
@@ -3544,11 +3544,18 @@
             statusEl.style.color = 'var(--warning)';
 
             try {
+                // 驗證詞庫是否正確載入
+                console.log('詞庫狀態:', {
+                    taiwanVocabs: taiwanVocabs?.length || 0,
+                    linguipediaVocabs: linguipediaVocabs?.length || 0,
+                    taiwanChinaVocabs: taiwanChinaVocabs?.length || 0
+                });
+
                 // 初始化 OpenCC（簡體轉台灣正體）
                 const converter = OpenCC.Converter({ from: 's', to: 'twp' });
 
                 // 轉換 prompts
-                if (currentPreset.prompts) {
+                if (currentPreset.prompts && Array.isArray(currentPreset.prompts)) {
                     currentPreset.prompts.forEach(prompt => {
                         // 轉換 name（四層轉換）
                         if (prompt.name && getChineseRatio(prompt.name) >= 0.1) {
