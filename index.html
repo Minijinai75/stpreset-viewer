@@ -3514,11 +3514,10 @@
             taiwanChina: taiwanChinaVocabs.length
         });
 
-        // 檢測文本中文字比例
-        function getChineseRatio(text) {
-            if (!text) return 0;
-            const chineseChars = text.match(/[\u4e00-\u9fa5]/g);
-            return chineseChars ? chineseChars.length / text.length : 0;
+        // 檢測文本是否包含中文
+        function hasChinese(text) {
+            if (!text) return false;
+            return /[\u4e00-\u9fa5]/.test(text);
         }
 
         // 應用詞庫替換
@@ -3604,7 +3603,7 @@
                 if (currentPreset.prompts && Array.isArray(currentPreset.prompts)) {
                     currentPreset.prompts.forEach(prompt => {
                         // 轉換 name（四層轉換）
-                        if (prompt.name && getChineseRatio(prompt.name) >= 0.1) {
+                        if (prompt.name && hasChinese(prompt.name)) {
                             let text = prompt.name;
                             // 第一層：linguipedia 詞庫（簡體形式，opencc 之前）
                             text = applyVocabReplacement(text, linguipediaVocabs);
@@ -3619,7 +3618,7 @@
                         }
 
                         // 轉換 content（四層轉換）
-                        if (prompt.content && getChineseRatio(prompt.content) >= 0.1) {
+                        if (prompt.content && hasChinese(prompt.content)) {
                             let text = prompt.content;
                             // 第一層：linguipedia 詞庫（簡體形式，opencc 之前）
                             text = applyVocabReplacement(text, linguipediaVocabs);
@@ -3636,7 +3635,7 @@
                 }
 
                 // 轉換 preset name（四層轉換）
-                if (currentPreset.name && getChineseRatio(currentPreset.name) >= 0.1) {
+                if (currentPreset.name && hasChinese(currentPreset.name)) {
                     let text = currentPreset.name;
                     // 第一層：linguipedia 詞庫（簡體形式，opencc 之前）
                     text = applyVocabReplacement(text, linguipediaVocabs);
@@ -3653,7 +3652,7 @@
                 if (currentPreset.extensions?.regex_scripts && Array.isArray(currentPreset.extensions.regex_scripts)) {
                     currentPreset.extensions.regex_scripts.forEach(script => {
                         // 轉換腳本名稱
-                        if (script.scriptName && getChineseRatio(script.scriptName) >= 0.1) {
+                        if (script.scriptName && hasChinese(script.scriptName)) {
                             let text = script.scriptName;
                             text = applyVocabReplacement(text, linguipediaVocabs);
                             text = converter(text);
@@ -3663,7 +3662,7 @@
                         }
 
                         // 轉換替換文本
-                        if (script.replaceString && getChineseRatio(script.replaceString) >= 0.1) {
+                        if (script.replaceString && hasChinese(script.replaceString)) {
                             let text = script.replaceString;
                             text = applyVocabReplacement(text, linguipediaVocabs);
                             text = converter(text);
@@ -3673,7 +3672,7 @@
                         }
 
                         // 轉換正則表達式中的中文（謹慎處理）
-                        if (script.findRegex && getChineseRatio(script.findRegex) >= 0.1) {
+                        if (script.findRegex && hasChinese(script.findRegex)) {
                             let text = script.findRegex;
                             text = applyVocabReplacement(text, linguipediaVocabs);
                             text = converter(text);
