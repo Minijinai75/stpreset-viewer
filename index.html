@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SillyTavern 預設詞預覽器</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <style>
         * {
             margin: 0;
@@ -13,103 +14,176 @@
         }
 
         :root {
-            --SmartThemeBodyColor: #c0c0c0;
-            --SmartThemeBorderColor: #444;
-            --SmartThemeBlurTintColor: rgba(30, 30, 30, 0.9);
-            --SmartThemeQuoteColor: #a8a8a8;
-            --SmartThemeChatTintColor: #1a1a1a;
-            --white30a: rgba(255, 255, 255, 0.3);
-            --white20a: rgba(255, 255, 255, 0.2);
-            --white50a: rgba(255, 255, 255, 0.5);
-            --accent: #4f7cac;
-            --accent-light: #6b98c9;
-            --marker-color: #e6a23c;
-            --global-color: #67c23a;
-            --important-color: #f56c6c;
-            --preset-color: #909399;
-            --injection-color: #9b59b6;
+            --SmartThemeBodyColor: #d8d0f0;
+            --SmartThemeBorderColor: #6b5b95;
+            --SmartThemeBlurTintColor: rgba(40, 35, 55, 0.92);
+            --SmartThemeQuoteColor: #b8afd8;
+            --SmartThemeChatTintColor: #2a2438;
+            --white30a: rgba(216, 208, 240, 0.3);
+            --white20a: rgba(216, 208, 240, 0.2);
+            --white50a: rgba(216, 208, 240, 0.5);
+            --accent: #9b87f5;
+            --accent-light: #b8a9f7;
+            --accent-dark: #7c66dc;
+            --marker-color: #e6b3ff;
+            --global-color: #a8d5ba;
+            --important-color: #ff9eb3;
+            --preset-color: #b8afd8;
+            --injection-color: #d4a5f3;
+            --success: #a8d5ba;
+            --warning: #ffd89b;
         }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+            background: linear-gradient(135deg, #1e1828 0%, #322849 50%, #1e1828 100%);
             background-attachment: fixed;
             color: var(--SmartThemeBodyColor);
             min-height: 100vh;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 1.5rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         header {
             text-align: center;
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: var(--SmartThemeBlurTintColor);
-            border-radius: 12px;
-            border: 1px solid var(--SmartThemeBorderColor);
+            padding: 2.5rem 2rem;
+            background: rgba(40, 35, 55, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(155, 135, 245, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, #9b87f5, #d4a5f3, #a8d5ba, #9b87f5);
+            background-size: 200% auto;
+            animation: gradientBorder 3s linear infinite;
+        }
+
+        @keyframes gradientBorder {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
         }
 
         h1 {
-            font-size: 1.75rem;
+            font-size: 2.2rem;
             margin-bottom: 0.5rem;
             color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .subtitle {
             color: var(--SmartThemeQuoteColor);
+            font-size: 1.1rem;
+        }
+
+        .instruction-box {
+            background: rgba(155, 135, 245, 0.1);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            padding: 1.25rem 1.5rem;
+            margin: 1.5rem auto 0;
+            max-width: 700px;
+            text-align: left;
             font-size: 0.95rem;
+            color: #e5e0fa;
+            line-height: 1.6;
+            box-shadow: inset 0 0 20px rgba(155, 135, 245, 0.05);
+        }
+        
+        .instruction-box h3 {
+            color: #fff;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .instruction-box ul {
+            padding-left: 1.5rem;
+        }
+        
+        .instruction-box li {
+            margin-bottom: 0.4rem;
         }
 
         /* Upload Section */
         .upload-section {
-            background: var(--SmartThemeBlurTintColor);
-            border-radius: 8px;
-            padding: 2rem;
+            background: rgba(40, 35, 55, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
             margin-bottom: 1.5rem;
-            border: 2px dashed var(--SmartThemeBorderColor);
+            border: 2px dashed rgba(155, 135, 245, 0.4);
             text-align: center;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
 
-        .upload-section.drag-over {
+        .upload-section:hover, .upload-section.drag-over {
             border-color: var(--accent);
-            background: rgba(79, 124, 172, 0.1);
+            background: rgba(155, 135, 245, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(155, 135, 245, 0.15);
         }
 
         .upload-icon {
-            font-size: 3rem;
+            font-size: 3.5rem;
             color: var(--accent);
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
+            filter: drop-shadow(0 2px 8px rgba(155, 135, 245, 0.4));
         }
 
         #fileInput { display: none; }
 
         .btn {
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
-            padding: 0.6rem 1.5rem;
+            padding: 0.75rem 1.75rem;
             border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(155, 135, 245, 0.3);
         }
 
         .btn:hover {
-            background: var(--accent-light);
+            background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(155, 135, 245, 0.4);
         }
 
         .btn-secondary {
-            background: #555;
-            margin-left: 0.5rem;
+            background: linear-gradient(135deg, #555 0%, #444 100%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            margin-left: 0.75rem;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #666 0%, #555 100%);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
         }
 
         /* Preview Container */
@@ -589,6 +663,31 @@
             color: var(--SmartThemeQuoteColor);
         }
 
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 3rem;
+            border-top: 1px solid var(--SmartThemeBorderColor);
+            color: var(--SmartThemeQuoteColor);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        footer a:hover {
+            color: var(--accent-light);
+        }
+
+        .copyright {
+            margin-top: 0.5rem;
+            opacity: 0.7;
+        }
+
         /* Edit Mode */
         .edit-mode-bar {
             background: var(--SmartThemeBlurTintColor);
@@ -621,19 +720,33 @@
         }
 
         .btn-success {
-            background: #67c23a;
+            background: var(--success);
+            color: #2a2438;
         }
 
         .btn-success:hover {
-            background: #85ce61;
+            background: #bfe5cd;
+            color: #2a2438;
         }
 
         .btn-warning {
-            background: #e6a23c;
+            background: var(--warning);
+            color: #2a2438;
         }
 
         .btn-warning:hover {
-            background: #ebb563;
+            background: #ffe0af;
+            color: #2a2438;
+        }
+
+        .btn-info {
+            background: #b8a9f7;
+            color: #2a2438;
+        }
+
+        .btn-info:hover {
+            background: #cbbff9;
+            color: #2a2438;
         }
 
         .prompt-content-editor {
@@ -692,6 +805,14 @@
         <header>
             <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 預設詞預覽器</h1>
             <p class="subtitle">上傳 Preset JSON 檔案，模擬酒館界面預覽 Prompts</p>
+            <div class="instruction-box">
+                <h3><i class="fa-regular fa-lightbulb"></i> 簡易說明</h3>
+                <ul>
+                    <li>點擊下方 <strong>選擇檔案</strong> 或拖放 JSON 預設詞檔案至此處。</li>
+                    <li>系統將自動解析並排列預設詞，讓您以最接近 SillyTavern 酒館內的介面來預覽。</li>
+                    <li>您可以在此確認每條 Prompt 的 <strong>類型、角色設定與 Token 佔用量</strong>，並可自由開關各區塊以檢視細節。</li>
+                </ul>
+            </div>
         </header>
 
         <div class="upload-section" id="uploadSection">
@@ -710,6 +831,15 @@
         <div id="errorContainer"></div>
         <div id="previewContainer" class="preview-container"></div>
     </div>
+
+    <footer>
+        <div>
+            <i class="fa-solid fa-code"></i> Made with <i class="fa-solid fa-heart" style="color: #f56c6c;"></i> by <strong>Minijinai75</strong>
+        </div>
+        <div class="copyright">
+            © 2026 SillyTavern 預設詞預覽器 | <a href="https://github.com/SillyTavern/SillyTavern" target="_blank">SillyTavern</a>
+        </div>
+    </footer>
 
     <script>
         let currentPreset = null;
@@ -838,6 +968,10 @@
                         <span id="editModeStatus">${editMode ? '編輯模式：可修改內容、切換開關' : '點擊「編輯模式」開始修改 Prompts 和設定'}</span>
                     </div>
                     <div class="edit-mode-actions">
+                        <button class="btn btn-info" onclick="convertToTraditional()" title="轉換為台灣繁體中文">
+                            <i class="fa-solid fa-language"></i>
+                            簡→繁轉換
+                        </button>
                         <button class="btn ${editMode ? 'btn-secondary' : 'btn-warning'}" onclick="toggleEditMode()">
                             <i class="fa-solid ${editMode ? 'fa-eye' : 'fa-pen'}"></i>
                             ${editMode ? '結束編輯' : '編輯模式'}
@@ -1279,7 +1413,7 @@
                 return;
             }
 
-            // 生成檔案名稱: 原名_YYMMDD.json
+            // 生成檔案名稱: 原名_TW_YYMMDD.json（如果有 _TW 的話）
             const date = new Date();
             const yy = String(date.getFullYear()).slice(-2);
             const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -1313,6 +1447,2176 @@
                     statusEl.textContent = originalText;
                     statusEl.style.color = '';
                 }, 3000);
+            }
+        }
+
+        // === 簡繁轉換功能 ===
+
+        // 台灣用語詞庫（高頻詞彙精選版）
+        // 台灣用語詞庫（完整版：linguipedia 1251 條 + taiwan_china 762 條）
+        const taiwanVocabs = [
+        // ===== linguipedia 詞庫（簡體形式，opencc 之前） =====
+            { cn: "脱氧核糖核酸水解酶", tw: "去氧核糖核酸水解酶" },
+            { cn: "国际奥林匹克委员会", tw: "國際奧林匹克委員會" },
+            { cn: "多成员车辆专用道", tw: "高乘載車道" },
+            { cn: "超大规模集成电路", tw: "超大型積體電路" },
+            { cn: "网间网络操作系统", tw: "網間網路作業系統" },
+            { cn: "东盟自由贸易协议", tw: "東協自由貿易協定" },
+            { cn: "老弱病残孕专座", tw: "博愛座" },
+            { cn: "超文本置标语言", tw: "超文本標記語言" },
+            { cn: "人类基因组计划", tw: "人類基因體計畫" },
+            { cn: "吉尼斯世界纪录", tw: "金氏世界紀錄" },
+            { cn: "二氧化碳激光器", tw: "二氧化碳雷射儀" },
+            { cn: "阿伏加德罗定律", tw: "亞佛加厥定律" },
+            { cn: "遗传修饰生物体", tw: "基改生物" },
+            { cn: "二（口+恶）英", tw: "戴奧辛" },
+            { cn: "危害公共安全罪", tw: "公共危險罪" },
+            { cn: "东盟自由贸易区", tw: "東協自由貿易區" },
+            { cn: "消费者物价指数", tw: "消費者物價指數" },
+            { cn: "特洛伊木马程序", tw: "特洛伊木馬程式" },
+            { cn: "统一资源定位器", tw: "統一資源定位器" },
+            { cn: "电缆调制解调器", tw: "纜線數據機" },
+            { cn: "石油输出国组织", tw: "石油輸出國組織" },
+            { cn: "友好用户界面", tw: "用戶親和介面" },
+            { cn: "移动操作系统", tw: "行動設備作業系統" },
+            { cn: "信息高速公路", tw: "資訊高速公路" },
+            { cn: "电脑语音处理", tw: "電腦語音處理" },
+            { cn: "电脑辅助教学", tw: "電腦輔助教學" },
+            { cn: "图形用户界面", tw: "圖形化使用者介面" },
+            { cn: "磁盘操作系统", tw: "磁碟作業系統" },
+            { cn: "网络通讯协议", tw: "網際網路協定" },
+            { cn: "乳头状瘤病毒", tw: "乳突狀瘤病毒" },
+            { cn: "红细胞生成素", tw: "紅血球生成素" },
+            { cn: "台湾校园歌曲", tw: "校園民歌" },
+            { cn: "高级知识分子", tw: "高級知識分子" },
+            { cn: "二氧化碳激光", tw: "二氧化碳雷射" },
+            { cn: "太阳光电产业", tw: "太陽光電產業" },
+            { cn: "脱氧核糖核酸", tw: "去氧核糖核酸" },
+            { cn: "阿伏伽德罗数", tw: "亞佛加厥數" },
+            { cn: "空气污染指数", tw: "空氣汙染指標" },
+            { cn: "重量摩尔浓度", tw: "重量莫耳濃度" },
+            { cn: "电荷耦合器件", tw: "電荷耦合元件" },
+            { cn: "可吸入颗粒物", tw: "懸浮微粒" },
+            { cn: "体积摩尔浓度", tw: "體積莫耳濃度" },
+            { cn: "格林尼治时间", tw: "格林威治時間" },
+            { cn: "高清晰度电视", tw: "高清晰度電視" },
+            { cn: "游客信息中心", tw: "遊客資訊中心" },
+            { cn: "最高人民法院", tw: "最高法院" },
+            { cn: "国民生产毛额", tw: "國民生產毛額" },
+            { cn: "亚洲开发银行", tw: "亞洲開發銀行" },
+            { cn: "场外交易市场", tw: "店頭" },
+            { cn: "土地所有权证", tw: "土地所有權狀" },
+            { cn: "传输控制协议", tw: "傳輸控制協定" },
+            { cn: "文件传输协议", tw: "檔案傳輸協定" },
+            { cn: "自身免疫疾病", tw: "自體免疫疾病" },
+            { cn: "远程巡航导弹", tw: "遠程巡航導彈" },
+            { cn: "双画面电视", tw: "子母畫面電視" },
+            { cn: "智能座便器", tw: "免治馬桶" },
+            { cn: "一次性杯子", tw: "免洗杯" },
+            { cn: "电磁感应灯", tw: "電磁感應燈" },
+            { cn: "等离子电视", tw: "電漿電視" },
+            { cn: "双缸洗衣机", tw: "雙槽洗衣機" },
+            { cn: "一加二咖啡", tw: "三合一咖啡" },
+            { cn: "食品添加剂", tw: "食品添加物" },
+            { cn: "天然气汽车", tw: "瓦斯車" },
+            { cn: "新泽西护栏", tw: "紐澤西護欄" },
+            { cn: "高级工程师", tw: "高級工程師" },
+            { cn: "二进制数字", tw: "二進制數字" },
+            { cn: "交互式媒体", tw: "互動式媒體" },
+            { cn: "交互式电视", tw: "互動式電視" },
+            { cn: "分散式网络", tw: "分散式網路" },
+            { cn: "代理服务器", tw: "代理伺服器" },
+            { cn: "每秒千字节", tw: "每秒千位元數" },
+            { cn: "移动存储器", tw: "抽取式磁碟" },
+            { cn: "掌上型电脑", tw: "掌上型電腦" },
+            { cn: "信息服务网", tw: "資訊服務網" },
+            { cn: "激光打印机", tw: "雷射印表機" },
+            { cn: "电子出版物", tw: "電子出版物" },
+            { cn: "计算机网络", tw: "電腦網路" },
+            { cn: "网络计算机", tw: "網路電腦" },
+            { cn: "网络摄影机", tw: "網路攝影機" },
+            { cn: "喷墨打印机", tw: "噴墨式印表機" },
+            { cn: "数字图书馆", tw: "數位圖書館" },
+            { cn: "调制解调器", tw: "數據機" },
+            { cn: "阿兹海默症", tw: "阿茲海默症" },
+            { cn: "异戊巴比妥", tw: "異戊巴比妥" },
+            { cn: "网络综合征", tw: "網路症候群" },
+            { cn: "联合收割机", tw: "聯合收割機" },
+            { cn: "远距离教学", tw: "遠距教學" },
+            { cn: "不间断电源", tw: "不斷電系統" },
+            { cn: "太空探测器", tw: "太空探測器" },
+            { cn: "本立德溶液", tw: "本氏液" },
+            { cn: "玻意耳定律", tw: "波以耳定律" },
+            { cn: "表面活性剂", tw: "表面活性劑" },
+            { cn: "阿尔法射线", tw: "阿爾法射線" },
+            { cn: "氯氟碳化物", tw: "氟氯碳化物" },
+            { cn: "科学计数法", tw: "科學記法" },
+            { cn: "德摩根法则", tw: "笛摩根法則" },
+            { cn: "单克隆抗体", tw: "單株抗體" },
+            { cn: "环境承载力", tw: "環境負載力" },
+            { cn: "类质同形体", tw: "類質同形體" },
+            { cn: "体积百分率", tw: "體積百分率" },
+            { cn: "大地基准点", tw: "大地基準點" },
+            { cn: "东北季候风", tw: "東北季風" },
+            { cn: "珠穆朗玛峰", tw: "珠穆朗瑪峰" },
+            { cn: "特洛伊木马", tw: "特洛伊木馬" },
+            { cn: "计算机音乐", tw: "電腦音樂" },
+            { cn: "宽屏幕电视", tw: "寬螢幕電視" },
+            { cn: "少年管教所", tw: "少年矯正學校" },
+            { cn: "发展中国家", tw: "開發中國家" },
+            { cn: "劳动密集型", tw: "勞力密集型" },
+            { cn: "土地闲置税", tw: "空地稅" },
+            { cn: "国际儿童村", tw: "國際兒童村" },
+            { cn: "国际儿童节", tw: "國際兒童節" },
+            { cn: "双职工家庭", tw: "雙薪家庭" },
+            { cn: "第一级产业", tw: "第一級產業" },
+            { cn: "第二级产业", tw: "第二級產業" },
+            { cn: "第三级产业", tw: "第三級產業" },
+            { cn: "第四级产业", tw: "第四級產業" },
+            { cn: "喷气式飞机", tw: "噴射機" },
+            { cn: "轻便摩托车", tw: "小綿羊" },
+            { cn: "公交車站牌", tw: "公車站牌" },
+            { cn: "双层公交车", tw: "雙層公車" },
+            { cn: "首席执行官", tw: "執行長" },
+            { cn: "只读存储器", tw: "唯讀記憶體" },
+            { cn: "条码扫描器", tw: "條碼掃描器" },
+            { cn: "液晶投影机", tw: "液晶投影機" },
+            { cn: "软式磁盘机", tw: "軟碟機" },
+            { cn: "集中式网络", tw: "集中式網路" },
+            { cn: "太空漫步机", tw: "太空漫步機" },
+            { cn: "高科技战争", tw: "高科技戰爭" },
+            { cn: "世界宣明会", tw: "世界展望會" },
+            { cn: "削铅笔机", tw: "削鉛筆機" },
+            { cn: "钢化玻璃", tw: "強化玻璃" },
+            { cn: "无尘粉笔", tw: "無灰粉筆" },
+            { cn: "数字相机", tw: "數位相機" },
+            { cn: "数字电视", tw: "數位電視" },
+            { cn: "模拟电视", tw: "類比電視" },
+            { cn: "冷冻蔬菜", tw: "冷凍蔬菜" },
+            { cn: "罐装啤酒", tw: "罐裝啤酒" },
+            { cn: "德国猪脚", tw: "德國豬腳" },
+            { cn: "冷冻食品", tw: "冷凍食品" },
+            { cn: "建筑执照", tw: "建築執照" },
+            { cn: "活动板房", tw: "組合屋" },
+            { cn: "环境品质", tw: "環境品質" },
+            { cn: "搭计程车", tw: "搭計程車" },
+            { cn: "磁浮列车", tw: "磁浮列車" },
+            { cn: "可变车道", tw: "調撥車道" },
+            { cn: "交通法规", tw: "交通法規" },
+            { cn: "交通高峰", tw: "尖峰時間" },
+            { cn: "高峰时间", tw: "高峰時間" },
+            { cn: "隐性广告", tw: "置入式廣告" },
+            { cn: "绿色标志", tw: "綠色標誌" },
+            { cn: "热门商品", tw: "熱門商品" },
+            { cn: "网络美女", tw: "網路美女" },
+            { cn: "环境难民", tw: "環境難民" },
+            { cn: "社会青年", tw: "社會青年" },
+            { cn: "二维条码", tw: "二維條碼" },
+            { cn: "人工智能", tw: "人工智慧" },
+            { cn: "门户网站", tw: "入口網站" },
+            { cn: "手提电脑", tw: "手提電腦" },
+            { cn: "文字处理", tw: "文書處理" },
+            { cn: "用户界面", tw: "用戶界面" },
+            { cn: "共享软件", tw: "共用軟體" },
+            { cn: "有线网络", tw: "有線網路" },
+            { cn: "色情网站", tw: "色情網站" },
+            { cn: "行动装置", tw: "行動裝置" },
+            { cn: "串流媒体", tw: "串流媒體" },
+            { cn: "低级语言", tw: "低階語言" },
+            { cn: "免费软件", tw: "免費軟體" },
+            { cn: "系统软件", tw: "系統軟體" },
+            { cn: "周边设备", tw: "周邊設備" },
+            { cn: "社交网站", tw: "社群網站" },
+            { cn: "封包交换", tw: "封包交換" },
+            { cn: "个人电脑", tw: "個人電腦" },
+            { cn: "套装软件", tw: "套裝軟體" },
+            { cn: "无线鼠标", tw: "無線滑鼠" },
+            { cn: "无线网络", tw: "無線網路" },
+            { cn: "程序设计", tw: "程式設計" },
+            { cn: "程序语言", tw: "程式語言" },
+            { cn: "虚拟内存", tw: "虛擬記憶體" },
+            { cn: "虚拟现实", tw: "虛擬實境" },
+            { cn: "超级电脑", tw: "超級電腦" },
+            { cn: "信息产业", tw: "資訊工業" },
+            { cn: "资讯安全", tw: "資訊安全" },
+            { cn: "信息技术", tw: "資訊技術" },
+            { cn: "信息系統", tw: "資訊系統" },
+            { cn: "信息科技", tw: "資訊科技" },
+            { cn: "信息理论", tw: "資訊理論" },
+            { cn: "电子信息", tw: "電子資訊" },
+            { cn: "电子游戏", tw: "電子遊戲" },
+            { cn: "电玩软件", tw: "電玩軟體" },
+            { cn: "电脑病毒", tw: "電腦病毒" },
+            { cn: "软件程序", tw: "電腦程式" },
+            { cn: "绿色软件", tw: "綠色軟體" },
+            { cn: "网络电话", tw: "網路電話" },
+            { cn: "外存储器", tw: "輔助記憶體" },
+            { cn: "宽带网络", tw: "寬頻網路" },
+            { cn: "公费医疗", tw: "公醫" },
+            { cn: "心理咨询", tw: "心理諮商" },
+            { cn: "长期记忆", tw: "長期記憶" },
+            { cn: "阿司匹林", tw: "阿司匹靈" },
+            { cn: "家庭医生", tw: "家庭醫生" },
+            { cn: "家庭医学", tw: "家庭醫學" },
+            { cn: "排异反应", tw: "排斥反應" },
+            { cn: "艾滋病毒", tw: "愛滋病毒" },
+            { cn: "断层扫描", tw: "斷層掃描" },
+            { cn: "医疗保险", tw: "醫療保險" },
+            { cn: "公立学校", tw: "公立學校" },
+            { cn: "生涯规划", tw: "生涯規劃" },
+            { cn: "完型填空", tw: "克漏字" },
+            { cn: "助学贷款", tw: "助學貸款" },
+            { cn: "戛纳影展", tw: "坎城影展" },
+            { cn: "盲人学校", tw: "盲人學校" },
+            { cn: "肢体语言", tw: "肢體語言" },
+            { cn: "厂校挂钩", tw: "建教合作" },
+            { cn: "校园网络", tw: "校園網路" },
+            { cn: "国际音标", tw: "國際音標" },
+            { cn: "基础教育", tw: "基礎教育" },
+            { cn: "基础学科", tw: "基礎學科" },
+            { cn: "开学典礼", tw: "開學典禮" },
+            { cn: "意大利语", tw: "意大利語" },
+            { cn: "脑力激荡", tw: "腦力激盪" },
+            { cn: "电子字典", tw: "電子字典" },
+            { cn: "电脑辞典", tw: "電腦辭典" },
+            { cn: "网络教育", tw: "網路教育" },
+            { cn: "诺贝尔奖", tw: "諾貝爾獎" },
+            { cn: "辐合思维", tw: "輻合思考" },
+            { cn: "聋哑学校", tw: "聾啞學校" },
+            { cn: "以人为本", tw: "以人為本" },
+            { cn: "高级中学", tw: "高級中學" },
+            { cn: "二次污染", tw: "二次汙染" },
+            { cn: "二氧化硅", tw: "二氧化矽" },
+            { cn: "十亿分率", tw: "十億分率" },
+            { cn: "化学受体", tw: "化學受器" },
+            { cn: "航天工业", tw: "太空工業" },
+            { cn: "太空技术", tw: "太空技術" },
+            { cn: "空间科学", tw: "太空科學" },
+            { cn: "脱氧核糖", tw: "去氧核糖" },
+            { cn: "生存竞争", tw: "生存競爭" },
+            { cn: "生物芯片", tw: "生物晶片" },
+            { cn: "生物节律", tw: "生物節律" },
+            { cn: "共轭复数", tw: "共軛複數" },
+            { cn: "地震等级", tw: "地震等級" },
+            { cn: "宇宙空间", tw: "宇宙空間" },
+            { cn: "自由降落", tw: "自由下落" },
+            { cn: "伽马射线", tw: "伽馬射線" },
+            { cn: "中值定理", tw: "均值定理" },
+            { cn: "抗氧化剂", tw: "抗氧化劑" },
+            { cn: "角平分线", tw: "角平分線" },
+            { cn: "贝塔射线", tw: "貝他射線" },
+            { cn: "纳米技术", tw: "奈米技術" },
+            { cn: "纳米材料", tw: "奈米材料" },
+            { cn: "纳米科学", tw: "奈米科學" },
+            { cn: "纳米纤维", tw: "奈米纖維" },
+            { cn: "定向选择", tw: "定向天擇" },
+            { cn: "空气质量", tw: "空氣品質" },
+            { cn: "胡克定律", tw: "虎克定律" },
+            { cn: "指数生长", tw: "指數生長" },
+            { cn: "指数增长", tw: "指數增長" },
+            { cn: "染色单体", tw: "染色分體" },
+            { cn: "原子序数", tw: "原子序" },
+            { cn: "基因敲除", tw: "基因剔除" },
+            { cn: "基因芯片", tw: "基因晶片" },
+            { cn: "球面方程", tw: "球面方程式" },
+            { cn: "异种杂交", tw: "異種雜交" },
+            { cn: "摩尔质量", tw: "莫耳質量" },
+            { cn: "摩尔体积", tw: "莫耳體積" },
+            { cn: "绝对温标", tw: "絕對溫標" },
+            { cn: "塑胶炸弹", tw: "塑膠炸彈" },
+            { cn: "激光制导", tw: "雷射導引" },
+            { cn: "电泳芯片", tw: "電泳晶片" },
+            { cn: "福尔马林", tw: "福爾馬林" },
+            { cn: "聚合反应", tw: "聚合作用" },
+            { cn: "聚酯纤维", tw: "聚酯纖維" },
+            { cn: "台湾猕猴", tw: "臺灣獼猴" },
+            { cn: "标准化石", tw: "標準化石" },
+            { cn: "噪音污染", tw: "噪音汙染" },
+            { cn: "换料周期", tw: "燃料裝填週期" },
+            { cn: "富营养化", tw: "優養化" },
+            { cn: "转移矩阵", tw: "轉移矩陣" },
+            { cn: "布须曼人", tw: "布希曼人" },
+            { cn: "科科板块", tw: "科克斯板塊" },
+            { cn: "夏令时间", tw: "夏令時間" },
+            { cn: "剪纸动画", tw: "剪紙動畫" },
+            { cn: "报告文学", tw: "報導文學" },
+            { cn: "收录音机", tw: "收錄音機" },
+            { cn: "首映典礼", tw: "首映典禮" },
+            { cn: "搞笑艺人", tw: "搞笑藝人" },
+            { cn: "激光唱片", tw: "雷射唱片" },
+            { cn: "激光唱机", tw: "雷射唱機" },
+            { cn: "实况录像", tw: "實況錄影" },
+            { cn: "演艺人员", tw: "演藝人員" },
+            { cn: "网络选美", tw: "網路選美" },
+            { cn: "音像制品", tw: "影音製品" },
+            { cn: "旅游事业", tw: "旅遊事業" },
+            { cn: "单眼相机", tw: "單眼相機" },
+            { cn: "无烟工业", tw: "無煙工業" },
+            { cn: "国际象棋", tw: "西洋棋" },
+            { cn: "零和游戏", tw: "零和遊戲" },
+            { cn: "先进国家", tw: "先進國家" },
+            { cn: "刑事侦查", tw: "刑事偵查" },
+            { cn: "告诉乃论", tw: "告訴乃論" },
+            { cn: "政治庇护", tw: "政治庇護" },
+            { cn: "诉讼保全", tw: "假處分" },
+            { cn: "民间外交", tw: "國民外交" },
+            { cn: "国家赔偿", tw: "國家賠償" },
+            { cn: "知识产权", tw: "智慧財產權" },
+            { cn: "电脑犯罪", tw: "電腦犯罪" },
+            { cn: "网络犯罪", tw: "網路犯罪" },
+            { cn: "防暴警察", tw: "鎮暴警察" },
+            { cn: "民事责任", tw: "民事責任" },
+            { cn: "群众路线", tw: "群眾路線" },
+            { cn: "驻外使节", tw: "駐外使節" },
+            { cn: "空壳公司", tw: "空殼公司" },
+            { cn: "品质管制", tw: "品質管制" },
+            { cn: "国民收入", tw: "國民所得" },
+            { cn: "通货膨胀", tw: "通貨膨脹" },
+            { cn: "电子商务", tw: "電子商務" },
+            { cn: "网络营销", tw: "網路行銷" },
+            { cn: "网上书店", tw: "網路書店" },
+            { cn: "网络经济", tw: "網路經濟" },
+            { cn: "自由市场", tw: "自由市場" },
+            { cn: "外汇储备", tw: "外匯存底" },
+            { cn: "空头支票", tw: "空頭支票" },
+            { cn: "强制保险", tw: "強制保險" },
+            { cn: "强势货币", tw: "強勢貨幣" },
+            { cn: "银团贷款", tw: "聯貸" },
+            { cn: "生活质量", tw: "生活品質" },
+            { cn: "计划生育", tw: "家庭計畫" },
+            { cn: "逆境商数", tw: "逆境商數" },
+            { cn: "国定假日", tw: "國定假日" },
+            { cn: "速食恋爱", tw: "速食戀愛" },
+            { cn: "无性婚姻", tw: "無性婚姻" },
+            { cn: "焦点新闻", tw: "焦點新聞" },
+            { cn: "集体婚礼", tw: "集體婚禮" },
+            { cn: "传统风味", tw: "傳統風味" },
+            { cn: "意识形态", tw: "意識形態" },
+            { cn: "读者来信", tw: "讀者投書" },
+            { cn: "丁克家庭", tw: "頂客家庭" },
+            { cn: "黑箱操作", tw: "黑箱作業" },
+            { cn: "精准农业", tw: "精準農業" },
+            { cn: "网箱养殖", tw: "箱網養殖" },
+            { cn: "劳务派遣", tw: "人力派遣" },
+            { cn: "在职培训", tw: "在職訓練" },
+            { cn: "自由职业", tw: "自由業" },
+            { cn: "工薪阶层", tw: "受薪階級" },
+            { cn: "浮动工资", tw: "浮動工資" },
+            { cn: "特种行业", tw: "特種行業" },
+            { cn: "视频会议", tw: "視訊會議" },
+            { cn: "隐性失业", tw: "隱性失業" },
+            { cn: "心理准备", tw: "心理準備" },
+            { cn: "换脑瓜子", tw: "換腦袋" },
+            { cn: "跌破眼镜", tw: "跌破眼鏡" },
+            { cn: "重磅炸弹", tw: "震撼彈" },
+            { cn: "法国面包", tw: "法國麵包" },
+            { cn: "拉拉队服", tw: "拉拉隊服" },
+            { cn: "汽车旅馆", tw: "汽車旅館" },
+            { cn: "公共汽车", tw: "公共汽車" },
+            { cn: "公交车道", tw: "公車專用道" },
+            { cn: "飞行汽车", tw: "飛行汽車" },
+            { cn: "复合运输", tw: "複合運輸" },
+            { cn: "单亲妈妈", tw: "單親媽媽" },
+            { cn: "低常儿童", tw: "智能障礙兒童" },
+            { cn: "高级语言", tw: "高階語言" },
+            { cn: "移动硬盘", tw: "移動硬碟" },
+            { cn: "汇编语言", tw: "組合語言" },
+            { cn: "软件工程", tw: "軟體工程" },
+            { cn: "感测网络", tw: "感測網路" },
+            { cn: "数据采掘", tw: "資料探勘" },
+            { cn: "数据总线", tw: "資料匯流排" },
+            { cn: "应用程序", tw: "應用程式" },
+            { cn: "驱动程序", tw: "驅動程式" },
+            { cn: "离线作业", tw: "離線作業" },
+            { cn: "集邮日戳", tw: "集郵日戳" },
+            { cn: "磁卡电话", tw: "卡式電話" },
+            { cn: "忙音信号", tw: "忙線訊號" },
+            { cn: "移动通信", tw: "行動通信" },
+            { cn: "智能手机", tw: "智慧型手機" },
+            { cn: "无绳电话", tw: "無線電話" },
+            { cn: "视频电话", tw: "視訊電話" },
+            { cn: "录音电话", tw: "電話答錄機" },
+            { cn: "数字通信", tw: "數位傳輸" },
+            { cn: "日本脑炎", tw: "日本腦炎" },
+            { cn: "监护病房", tw: "加護病房" },
+            { cn: "生理盐水", tw: "生理食鹽水" },
+            { cn: "安非他明", tw: "安公子" },
+            { cn: "吸二手烟", tw: "吸二手菸" },
+            { cn: "网络文学", tw: "網路文學" },
+            { cn: "先发投手", tw: "先發投手" },
+            { cn: "有氧运动", tw: "有氧運動" },
+            { cn: "花样滑冰", tw: "花式溜冰" },
+            { cn: "花样滑水", tw: "花式滑水" },
+            { cn: "巡航飞弹", tw: "巡航飛彈" },
+            { cn: "洲际导弹", tw: "洲際導彈" },
+            { cn: "激光武器", tw: "雷射武器" },
+            { cn: "弹道导弹", tw: "彈道飛彈" },
+            { cn: "内幕交易", tw: "內線交易" },
+            { cn: "生产工具", tw: "生產工具" },
+            { cn: "契约农业", tw: "契約農業" },
+            { cn: "大头照", tw: "大頭照" },
+            { cn: "不沾锅", tw: "不沾鍋" },
+            { cn: "公文包", tw: "公事包" },
+            { cn: "分度规", tw: "分度規" },
+            { cn: "分体式", tw: "分離式" },
+            { cn: "文件夹", tw: "文件夾" },
+            { cn: "日光灯", tw: "日光燈" },
+            { cn: "水银灯", tw: "水銀燈" },
+            { cn: "洗甲水", tw: "去光水" },
+            { cn: "打卡机", tw: "打卡機" },
+            { cn: "煤气罐", tw: "瓦斯桶" },
+            { cn: "镇流器", tw: "安定器" },
+            { cn: "充电宝", tw: "行動電源" },
+            { cn: "吹风机", tw: "吹風機" },
+            { cn: "折叠桌", tw: "折疊桌" },
+            { cn: "易拉罐", tw: "易開罐" },
+            { cn: "液压剪", tw: "油壓剪" },
+            { cn: "花园鞋", tw: "花園鞋" },
+            { cn: "保温杯", tw: "保溫杯" },
+            { cn: "保丽龙", tw: "保麗龍" },
+            { cn: "柔软剂", tw: "柔軟精" },
+            { cn: "圆珠笔", tw: "原子筆" },
+            { cn: "梳妆台", tw: "梳妝臺" },
+            { cn: "纸尿裤", tw: "紙尿褲" },
+            { cn: "回形针", tw: "迴紋針" },
+            { cn: "吹波机", tw: "酒測器" },
+            { cn: "启动器", tw: "啟動器" },
+            { cn: "探海灯", tw: "探海燈" },
+            { cn: "智能卡", tw: "晶片卡" },
+            { cn: "减震鞋", tw: "減震鞋" },
+            { cn: "塑料袋", tw: "塑膠袋" },
+            { cn: "热敏纸", tw: "感熱紙" },
+            { cn: "防盗仪", tw: "感應門" },
+            { cn: "暖风机", tw: "暖氣機" },
+            { cn: "灭火器", tw: "滅火器" },
+            { cn: "节水环", tw: "節水墊片" },
+            { cn: "电磁炉", tw: "電磁爐" },
+            { cn: "电热壶", tw: "電熱壺" },
+            { cn: "电饭锅", tw: "電鍋" },
+            { cn: "电胡刀", tw: "電鬍刀" },
+            { cn: "监视器", tw: "監視器" },
+            { cn: "标示牌", tw: "標示牌" },
+            { cn: "卫生筷", tw: "衛生筷" },
+            { cn: "复印机", tw: "複印機" },
+            { cn: "压力锅", tw: "壓力鍋" },
+            { cn: "压克力", tw: "壓克力" },
+            { cn: "避难包", tw: "避難包" },
+            { cn: "黏扣带", tw: "黏扣帶" },
+            { cn: "显像管", tw: "顯像管" },
+            { cn: "延长线", tw: "延長線" },
+            { cn: "电子眼", tw: "電子眼" },
+            { cn: "梳打饼", tw: "梳打餅" },
+            { cn: "茶叶蛋", tw: "茶葉蛋" },
+            { cn: "酸奶酪", tw: "優格" },
+            { cn: "优酪乳", tw: "優酪乳" },
+            { cn: "低钠盐", tw: "低鈉鹽" },
+            { cn: "色拉油", tw: "沙拉油" },
+            { cn: "土鸡蛋", tw: "土雞蛋" },
+            { cn: "虱目鱼", tw: "虱目魚" },
+            { cn: "童子鸡", tw: "童子雞" },
+            { cn: "圣女果", tw: "聖女番茄" },
+            { cn: "利乐包", tw: "利樂包" },
+            { cn: "乌龙茶", tw: "烏龍茶" },
+            { cn: "纯净水", tw: "純水" },
+            { cn: "凉开水", tw: "涼開水" },
+            { cn: "还原乳", tw: "還原乳" },
+            { cn: "糯米纸", tw: "糯米紙" },
+            { cn: "建筑物", tw: "建築物" },
+            { cn: "经适房", tw: "國宅" },
+            { cn: "填埋场", tw: "掩埋場" },
+            { cn: "样板间", tw: "樣品屋" },
+            { cn: "写字楼", tw: "辦公大樓" },
+            { cn: "双人房", tw: "雙人房" },
+            { cn: "脚手架", tw: "鷹架" },
+            { cn: "违规房", tw: "違規房" },
+            { cn: "加班车", tw: "加班車" },
+            { cn: "挂空挡", tw: "打空檔" },
+            { cn: "末班车", tw: "末班車" },
+            { cn: "交通车", tw: "交通車" },
+            { cn: "助力车", tw: "助力車" },
+            { cn: "快速路", tw: "快速道" },
+            { cn: "后车厢", tw: "後車廂" },
+            { cn: "后视镜", tw: "後視鏡" },
+            { cn: "砂石车", tw: "砂石車" },
+            { cn: "计程车", tw: "計程車" },
+            { cn: "计价器", tw: "計費表" },
+            { cn: "始发站", tw: "起點站" },
+            { cn: "速可达", tw: "速可達" },
+            { cn: "登山车", tw: "登山車" },
+            { cn: "摩托车", tw: "摩托車" },
+            { cn: "发夹弯", tw: "髮夾彎" },
+            { cn: "拖挂车", tw: "聯結車" },
+            { cn: "行驶证", tw: "行照" },
+            { cn: "快车道", tw: "快車道" },
+            { cn: "斑马线", tw: "斑馬線" },
+            { cn: "慢车道", tw: "慢車道" },
+            { cn: "双黄线", tw: "雙黃線" },
+            { cn: "头期款", tw: "頭期款" },
+            { cn: "钟点工", tw: "鐘點工" },
+            { cn: "飙车族", tw: "飆車族" },
+            { cn: "会计师", tw: "會計師" },
+            { cn: "证婚人", tw: "證婚人" },
+            { cn: "千字节", tw: "千位元組" },
+            { cn: "上网本", tw: "小筆電" },
+            { cn: "任务栏", tw: "工作列" },
+            { cn: "内联网", tw: "內部網路" },
+            { cn: "以太网", tw: "以太網" },
+            { cn: "万维网", tw: "全球資訊網" },
+            { cn: "打印机", tw: "印表機" },
+            { cn: "多媒体", tw: "多媒體" },
+            { cn: "行动碟", tw: "行動碟" },
+            { cn: "服务器", tw: "伺服器" },
+            { cn: "比特秒", tw: "位元每秒" },
+            { cn: "投影机", tw: "投影機" },
+            { cn: "计算器", tw: "計算器" },
+            { cn: "源代码", tw: "原始碼" },
+            { cn: "软件包", tw: "軟體包" },
+            { cn: "智能型", tw: "智慧型" },
+            { cn: "程序员", tw: "程式員" },
+            { cn: "信息化", tw: "資訊化" },
+            { cn: "信息流", tw: "資訊流" },
+            { cn: "信息库", tw: "資訊庫" },
+            { cn: "电子檔", tw: "電子檔" },
+            { cn: "网络化", tw: "網路化" },
+            { cn: "网络版", tw: "網路版" },
+            { cn: "玉米虫", tw: "網路蟑螂" },
+            { cn: "互联网", tw: "網際網路" },
+            { cn: "因特网", tw: "網際網路" },
+            { cn: "广域网", tw: "廣域網路" },
+            { cn: "影碟机", tw: "影碟機" },
+            { cn: "数字化", tw: "數位化" },
+            { cn: "编译器", tw: "編譯器" },
+            { cn: "三唑仑", tw: "三唑侖" },
+            { cn: "疯牛病", tw: "狂牛症" },
+            { cn: "芬兰浴", tw: "芬蘭浴" },
+            { cn: "红血球", tw: "紅血球" },
+            { cn: "剖腹产", tw: "剖腹產" },
+            { cn: "迷幻药", tw: "迷幻藥" },
+            { cn: "探温机", tw: "探溫機" },
+            { cn: "救护车", tw: "救護車" },
+            { cn: "理疗师", tw: "理療師" },
+            { cn: "镇痛新", tw: "速賜康" },
+            { cn: "珐琅质", tw: "琺瑯質" },
+            { cn: "诊疗室", tw: "診療室" },
+            { cn: "爱滋病", tw: "愛滋病" },
+            { cn: "鼠标手", tw: "滑鼠手" },
+            { cn: "脑死亡", tw: "腦死" },
+            { cn: "脑梗塞", tw: "腦梗塞" },
+            { cn: "脑电图", tw: "腦電圖" },
+            { cn: "脚脖子", tw: "腳脖子" },
+            { cn: "多动儿", tw: "過動兒" },
+            { cn: "多动症", tw: "過動症" },
+            { cn: "激光刀", tw: "雷射刀" },
+            { cn: "蒙汗药", tw: "蒙汗藥" },
+            { cn: "卫生巾", tw: "衛生棉" },
+            { cn: "猪流感", tw: "豬流感" },
+            { cn: "面神经", tw: "顏面神經" },
+            { cn: "药用棉", tw: "藥用棉" },
+            { cn: "恐高症", tw: "懼高症" },
+            { cn: "卫生院", tw: "衛生院" },
+            { cn: "卫生棉", tw: "衛生棉" },
+            { cn: "三角带", tw: "三角皮帶" },
+            { cn: "拖拉机", tw: "拖拉機" },
+            { cn: "挖土机", tw: "挖土機" },
+            { cn: "耕耘机", tw: "耕耘機" },
+            { cn: "牵引机", tw: "牽引機" },
+            { cn: "铲土机", tw: "剷土機" },
+            { cn: "盾构机", tw: "潛盾機" },
+            { cn: "走读生", tw: "走讀生" },
+            { cn: "孤儿院", tw: "孤兒院" },
+            { cn: "校运会", tw: "校運會" },
+            { cn: "破读字", tw: "破音字" },
+            { cn: "软实力", tw: "軟實力" },
+            { cn: "复印件", tw: "複印本" },
+            { cn: "荧光笔", tw: "螢光筆" },
+            { cn: "联系本", tw: "聯絡簿" },
+            { cn: "大字报", tw: "大字報" },
+            { cn: "剃光头", tw: "剃光頭" },
+            { cn: "家长会", tw: "家長會" },
+            { cn: "补习班", tw: "補習班" },
+            { cn: "人造革", tw: "人造皮" },
+            { cn: "泥石流", tw: "土石流" },
+            { cn: "小苏打", tw: "小蘇打" },
+            { cn: "互感应", tw: "互感應" },
+            { cn: "拉尼娜", tw: "反聖嬰" },
+            { cn: "反冲力", tw: "反衝力" },
+            { cn: "反应堆", tw: "反應堆" },
+            { cn: "天然气", tw: "天然氣" },
+            { cn: "航天员", tw: "太空人" },
+            { cn: "太阳炉", tw: "太陽爐" },
+            { cn: "引发酶", tw: "引子酶" },
+            { cn: "火花塞", tw: "火星塞" },
+            { cn: "甘氨酸", tw: "甘胺酸" },
+            { cn: "生物学", tw: "生物學" },
+            { cn: "生产者", tw: "生產者" },
+            { cn: "生态群", tw: "生態群" },
+            { cn: "立体声", tw: "立體聲" },
+            { cn: "光污染", tw: "光汙染" },
+            { cn: "赤霉素", tw: "吉貝素" },
+            { cn: "赤霉酸", tw: "吉貝酸" },
+            { cn: "回力标", tw: "回力標" },
+            { cn: "抗药性", tw: "抗藥性" },
+            { cn: "光焦度", tw: "折光率" },
+            { cn: "汽油弹", tw: "汽油彈" },
+            { cn: "硅晶片", tw: "矽晶片" },
+            { cn: "硅酸盐", tw: "矽酸鹽" },
+            { cn: "硅橡胶", tw: "矽橡膠" },
+            { cn: "花岗石", tw: "花崗石" },
+            { cn: "氟利昂", tw: "氟氯烷" },
+            { cn: "向风针", tw: "風向儀" },
+            { cn: "原子价", tw: "原子價" },
+            { cn: "原生质", tw: "原生質" },
+            { cn: "核反应", tw: "核反應" },
+            { cn: "核电厂", tw: "核電廠" },
+            { cn: "多莉羊", tw: "桃莉羊" },
+            { cn: "纯合子", tw: "純合子" },
+            { cn: "氨基酸", tw: "胺基酸" },
+            { cn: "臭氧层", tw: "臭氧層" },
+            { cn: "航天人", tw: "航太人" },
+            { cn: "马蹄莲", tw: "馬蹄蓮" },
+            { cn: "参照物", tw: "參照物" },
+            { cn: "基因组", tw: "基因體" },
+            { cn: "液化气", tw: "液化瓦斯" },
+            { cn: "散逸层", tw: "散逸層" },
+            { cn: "超声波", tw: "超聲波" },
+            { cn: "晶体管", tw: "電晶體" },
+            { cn: "电解池", tw: "電解槽" },
+            { cn: "增温层", tw: "增溫層" },
+            { cn: "样本数", tw: "樣本數" },
+            { cn: "荧光粉", tw: "螢光粉" },
+            { cn: "荧光棒", tw: "螢光棒" },
+            { cn: "荧光剂", tw: "螢光劑" },
+            { cn: "克隆化", tw: "選殖" },
+            { cn: "转录本", tw: "轉錄本" },
+            { cn: "镜反射", tw: "鏡反射" },
+            { cn: "日界线", tw: "國際換日線" },
+            { cn: "文明戏", tw: "文明戲" },
+            { cn: "布堆画", tw: "布堆畫" },
+            { cn: "二轮片", tw: "二輪片" },
+            { cn: "午夜场", tw: "午夜場" },
+            { cn: "活报剧", tw: "行動劇" },
+            { cn: "披头士", tw: "披頭四" },
+            { cn: "军旅剧", tw: "軍教片" },
+            { cn: "的士高", tw: "迪斯可" },
+            { cn: "过家家", tw: "家家酒" },
+            { cn: "音像店", tw: "唱片行" },
+            { cn: "单本剧", tw: "單元劇" },
+            { cn: "游园会", tw: "園遊會" },
+            { cn: "游乐场", tw: "遊樂場" },
+            { cn: "电臀舞", tw: "電臀舞" },
+            { cn: "录像带", tw: "錄影帶" },
+            { cn: "录像机", tw: "錄影機" },
+            { cn: "悬疑剧", tw: "懸疑劇" },
+            { cn: "联欢会", tw: "聯歡會" },
+            { cn: "旅游业", tw: "旅遊業" },
+            { cn: "旅游车", tw: "遊覽車" },
+            { cn: "旅游局", tw: "觀光局" },
+            { cn: "打麻将", tw: "打麻將" },
+            { cn: "开奖机", tw: "開獎機" },
+            { cn: "英联邦", tw: "大英國協" },
+            { cn: "阳光权", tw: "日照權" },
+            { cn: "监狱长", tw: "典獄長" },
+            { cn: "假执行", tw: "假執行" },
+            { cn: "执达员", tw: "執達員" },
+            { cn: "第四权", tw: "第四權" },
+            { cn: "独联体", tw: "獨立國協" },
+            { cn: "听证会", tw: "聽證會" },
+            { cn: "盗窃案", tw: "竊盜案" },
+            { cn: "钻空子", tw: "鑽漏洞" },
+            { cn: "小两会", tw: "小兩會" },
+            { cn: "身份权", tw: "身分權" },
+            { cn: "监理所", tw: "監理所" },
+            { cn: "保护价", tw: "保證價格" },
+            { cn: "负增长", tw: "負成長" },
+            { cn: "贫困线", tw: "貧窮線" },
+            { cn: "运营官", tw: "營運長" },
+            { cn: "生产力", tw: "生產力" },
+            { cn: "房产税", tw: "房屋稅" },
+            { cn: "信用证", tw: "信用狀" },
+            { cn: "应急金", tw: "急救金" },
+            { cn: "起征点", tw: "起徵點" },
+            { cn: "理赔站", tw: "理賠服務中心" },
+            { cn: "回报率", tw: "報酬率" },
+            { cn: "征信所", tw: "徵信所" },
+            { cn: "阎王账", tw: "閻王帳" },
+            { cn: "充值卡", tw: "儲值卡" },
+            { cn: "总收入", tw: "總收入" },
+            { cn: "互助会", tw: "互助會" },
+            { cn: "辛苦费", tw: "跑路費" },
+            { cn: "出份子", tw: "出分子" },
+            { cn: "唱红脸", tw: "扮白臉" },
+            { cn: "唱白脸", tw: "扮黑臉" },
+            { cn: "宰牲节", tw: "宰牲節" },
+            { cn: "国庆日", tw: "國慶日" },
+            { cn: "救护队", tw: "救護隊" },
+            { cn: "圣诞节", tw: "聖誕節" },
+            { cn: "农家历", tw: "農民曆" },
+            { cn: "嬉皮士", tw: "嬉皮" },
+            { cn: "高姿态", tw: "高姿態" },
+            { cn: "不粘锅", tw: "不沾鍋" },
+            { cn: "放鸽子", tw: "放鴿子" },
+            { cn: "矿务局", tw: "礦務局" },
+            { cn: "名誉职", tw: "名譽職" },
+            { cn: "工薪族", tw: "受薪族" },
+            { cn: "合同工", tw: "契約工" },
+            { cn: "遣散费", tw: "遣散費" },
+            { cn: "招聘会", tw: "徵才會" },
+            { cn: "识别证", tw: "識別證" },
+            { cn: "总工会", tw: "總工會" },
+            { cn: "倒读数", tw: "倒數" },
+            { cn: "倒计时", tw: "倒數計時" },
+            { cn: "硬实力", tw: "硬實力" },
+            { cn: "零增长", tw: "零增長" },
+            { cn: "导火线", tw: "導火線" },
+            { cn: "快餐店", tw: "速食店" },
+            { cn: "烧烤店", tw: "燒烤店" },
+            { cn: "不织布", tw: "不織布" },
+            { cn: "打底裤", tw: "內搭褲" },
+            { cn: "羽绒衣", tw: "羽絨衣" },
+            { cn: "连衣裙", tw: "連衣裙" },
+            { cn: "卫生衣", tw: "衛生衣" },
+            { cn: "卫生裤", tw: "衛生褲" },
+            { cn: "鲨鱼衣", tw: "鯊魚衣" },
+            { cn: "露脐装", tw: "露臍裝" },
+            { cn: "户口本", tw: "戶口名簿" },
+            { cn: "夹层屋", tw: "夾層屋" },
+            { cn: "身份证", tw: "身分證" },
+            { cn: "气垫船", tw: "氣墊船" },
+            { cn: "候机室", tw: "候機室" },
+            { cn: "航站楼", tw: "航廈" },
+            { cn: "值机岛", tw: "報到櫃檯" },
+            { cn: "登机口", tw: "登機門" },
+            { cn: "登机证", tw: "登機證" },
+            { cn: "黑匣子", tw: "黑盒子" },
+            { cn: "油电车", tw: "油電車" },
+            { cn: "小货车", tw: "小貨車" },
+            { cn: "小轿车", tw: "小轎車" },
+            { cn: "公交站", tw: "公車站" },
+            { cn: "屏蔽门", tw: "月臺門" },
+            { cn: "转运站", tw: "轉運站" },
+            { cn: "兽力车", tw: "獸力車" },
+            { cn: "避车道", tw: "避車道" },
+            { cn: "自驾车", tw: "自駕車" },
+            { cn: "普快车", tw: "普快車" },
+            { cn: "黑头车", tw: "黑頭車" },
+            { cn: "月台票", tw: "月臺票" },
+            { cn: "来回票", tw: "來回票" },
+            { cn: "导盲道", tw: "導盲道" },
+            { cn: "盲道砖", tw: "導盲磚" },
+            { cn: "保修期", tw: "保固期" },
+            { cn: "破盘价", tw: "破盤價" },
+            { cn: "售报机", tw: "售報機" },
+            { cn: "商业街", tw: "商業街" },
+            { cn: "小卖部", tw: "販賣部" },
+            { cn: "贩卖机", tw: "販賣機" },
+            { cn: "保育员", tw: "保育員" },
+            { cn: "丁克族", tw: "頂客族" },
+            { cn: "残疾人", tw: "殘障者" },
+            { cn: "记忆卡", tw: "記憶卡" },
+            { cn: "存储器", tw: "記憶體" },
+            { cn: "扩展名", tw: "副檔名" },
+            { cn: "局域网", tw: "區域網路" },
+            { cn: "扫描机", tw: "掃描機" },
+            { cn: "超极本", tw: "超極致筆電" },
+            { cn: "超链结", tw: "超鏈結" },
+            { cn: "集成块", tw: "集成塊" },
+            { cn: "云计算", tw: "雲端運算" },
+            { cn: "汇流排", tw: "匯流排" },
+            { cn: "微电脑", tw: "微電腦" },
+            { cn: "分辨率", tw: "解析度" },
+            { cn: "刻录机", tw: "燒錄機" },
+            { cn: "读卡机", tw: "讀卡機" },
+            { cn: "基地台", tw: "基地臺" },
+            { cn: "接线员", tw: "接線員" },
+            { cn: "短讯息", tw: "短訊息" },
+            { cn: "传呼机", tw: "傳呼機" },
+            { cn: "解码盒", tw: "解碼盒" },
+            { cn: "解码器", tw: "解碼器" },
+            { cn: "屏蔽仪", tw: "電子遮蔽器" },
+            { cn: "电传机", tw: "電傳打字機" },
+            { cn: "打点滴", tw: "打點滴" },
+            { cn: "白大褂", tw: "白袍" },
+            { cn: "安乐死", tw: "安樂死" },
+            { cn: "圆舞曲", tw: "圓舞曲" },
+            { cn: "歌仔戏", tw: "歌仔戲" },
+            { cn: "萨克斯", tw: "薩克斯" },
+            { cn: "布鲁斯", tw: "藍調" },
+            { cn: "罗曼史", tw: "羅曼史" },
+            { cn: "二传手", tw: "二傳手" },
+            { cn: "大盖帽", tw: "大火鍋" },
+            { cn: "大运会", tw: "世大運" },
+            { cn: "外围赛", tw: "外圍賽" },
+            { cn: "全垒打", tw: "全壘打" },
+            { cn: "残奥会", tw: "帕運" },
+            { cn: "东道国", tw: "東道國" },
+            { cn: "直排轮", tw: "直排輪" },
+            { cn: "保龄球", tw: "保齡球" },
+            { cn: "俯卧撑", tw: "俯臥撐" },
+            { cn: "国标舞", tw: "國標舞" },
+            { cn: "混合泳", tw: "混合式游泳" },
+            { cn: "软骨功", tw: "軟骨功" },
+            { cn: "华尔兹", tw: "華爾滋" },
+            { cn: "溜冰场", tw: "溜冰場" },
+            { cn: "滑轮鞋", tw: "滑輪鞋" },
+            { cn: "盖火锅", tw: "蓋火鍋" },
+            { cn: "翘翘板", tw: "翹翹板" },
+            { cn: "韵律操", tw: "韻律操" },
+            { cn: "继承法", tw: "繼承法" },
+            { cn: "军士长", tw: "士官長" },
+            { cn: "来复枪", tw: "來復槍" },
+            { cn: "核试验", tw: "核子試爆" },
+            { cn: "核战争", tw: "核子戰爭" },
+            { cn: "核潜艇", tw: "核潛艇" },
+            { cn: "闪电战", tw: "閃電戰" },
+            { cn: "补给船", tw: "補給船" },
+            { cn: "信息战", tw: "資訊戰" },
+            { cn: "震撼弹", tw: "震撼彈" },
+            { cn: "战斗机", tw: "戰鬥機" },
+            { cn: "烧夷弹", tw: "燒夷彈" },
+            { cn: "护卫舰", tw: "護衛艦" },
+            { cn: "登陆舰", tw: "登陸艦" },
+            { cn: "卫戍区", tw: "衛戍區" },
+            { cn: "中介费", tw: "仲介費" },
+            { cn: "投报率", tw: "投報率" },
+            { cn: "公示期", tw: "公告期" },
+            { cn: "行道树", tw: "行道樹" },
+            { cn: "排插", tw: "延長線" },
+            { cn: "卧具", tw: "臥具" },
+            { cn: "干花", tw: "乾燥花" },
+            { cn: "接线", tw: "接線" },
+            { cn: "凉伞", tw: "涼傘" },
+            { cn: "邮册", tw: "郵冊" },
+            { cn: "铳子", tw: "銃子" },
+            { cn: "电筒", tw: "電筒" },
+            { cn: "图钉", tw: "圖釘" },
+            { cn: "墨镜", tw: "墨鏡" },
+            { cn: "塑封", tw: "膠膜" },
+            { cn: "发夹", tw: "髮夾" },
+            { cn: "炉条", tw: "爐條" },
+            { cn: "过塑", tw: "護貝" },
+            { cn: "魔方", tw: "魔術方塊" },
+            { cn: "贝果", tw: "貝果" },
+            { cn: "慕丝", tw: "慕絲" },
+            { cn: "松饼", tw: "鬆餅" },
+            { cn: "咖喱", tw: "咖哩" },
+            { cn: "鸡粉", tw: "雞粉" },
+            { cn: "甘蓝", tw: "甘藍" },
+            { cn: "非鲫", tw: "非鯽" },
+            { cn: "虹鳟", tw: "虹鱒" },
+            { cn: "马鲛", tw: "馬駮" },
+            { cn: "鱼翅", tw: "魚翅" },
+            { cn: "里脊", tw: "裡脊" },
+            { cn: "鳄梨", tw: "酪梨" },
+            { cn: "莲雾", tw: "蓮霧" },
+            { cn: "腌肉", tw: "醃肉" },
+            { cn: "鲔鱼", tw: "鮪魚" },
+            { cn: "鲑鱼", tw: "鮭魚" },
+            { cn: "鸡子", tw: "雞子" },
+            { cn: "萝卜", tw: "蘿蔔" },
+            { cn: "汽酒", tw: "汽泡酒" },
+            { cn: "快餐", tw: "速食" },
+            { cn: "汉堡", tw: "漢堡" },
+            { cn: "盖饭", tw: "蓋飯" },
+            { cn: "烩饭", tw: "燴飯" },
+            { cn: "食谱", tw: "食譜" },
+            { cn: "酒会", tw: "酒會" },
+            { cn: "菜单", tw: "菜單" },
+            { cn: "罐装", tw: "罐裝" },
+            { cn: "双拼", tw: "雙拼" },
+            { cn: "鸡精", tw: "雞精" },
+            { cn: "落户", tw: "設籍" },
+            { cn: "违建", tw: "違建" },
+            { cn: "期房", tw: "預售屋" },
+            { cn: "壁纸", tw: "壁紙" },
+            { cn: "壁橱", tw: "壁櫥" },
+            { cn: "匝道", tw: "交流道" },
+            { cn: "拼车", tw: "共乘" },
+            { cn: "车斗", tw: "車斗" },
+            { cn: "车胎", tw: "車胎" },
+            { cn: "拖车", tw: "拖車" },
+            { cn: "大奔", tw: "朋馳" },
+            { cn: "空挡", tw: "空擋" },
+            { cn: "追尾", tw: "追撞" },
+            { cn: "排挡", tw: "排擋" },
+            { cn: "单车", tw: "單車" },
+            { cn: "换挡", tw: "換擋" },
+            { cn: "轻轨", tw: "輕軌" },
+            { cn: "环路", tw: "環道" },
+            { cn: "道口", tw: "平交道" },
+            { cn: "闸机", tw: "通關機" },
+            { cn: "驾校", tw: "駕訓班" },
+            { cn: "残品", tw: "瑕疵品" },
+            { cn: "网购", tw: "網購" },
+            { cn: "发廊", tw: "髮廊" },
+            { cn: "摆摊", tw: "擺攤" },
+            { cn: "礼券", tw: "禮券" },
+            { cn: "定钱", tw: "定錢" },
+            { cn: "消协", tw: "消協" },
+            { cn: "联保", tw: "聯保" },
+            { cn: "义工", tw: "義工" },
+            { cn: "网友", tw: "網友" },
+            { cn: "证人", tw: "證人" },
+            { cn: "警卫", tw: "警衛" },
+            { cn: "摄影", tw: "攝影" },
+            { cn: "人头", tw: "人頭" },
+            { cn: "职称", tw: "職稱" },
+            { cn: "下线", tw: "下線" },
+            { cn: "汉化", tw: "中文化" },
+            { cn: "内存", tw: "主記憶體" },
+            { cn: "半角", tw: "半形" },
+            { cn: "光驱", tw: "光碟機" },
+            { cn: "全角", tw: "全形" },
+            { cn: "打印", tw: "列印" },
+            { cn: "字符", tw: "字元" },
+            { cn: "字节", tw: "位元組" },
+            { cn: "闪存", tw: "快閃記憶體" },
+            { cn: "卸载", tw: "卸載" },
+            { cn: "刷屏", tw: "洗版" },
+            { cn: "声卡", tw: "音效卡" },
+            { cn: "首页", tw: "首頁" },
+            { cn: "桌机", tw: "桌機" },
+            { cn: "联机", tw: "連線" },
+            { cn: "博客", tw: "部落客" },
+            { cn: "游标", tw: "游標" },
+            { cn: "硬盘", tw: "硬碟" },
+            { cn: "硬件", tw: "硬體" },
+            { cn: "网关", tw: "閘道" },
+            { cn: "电邮", tw: "電郵" },
+            { cn: "截图", tw: "截圖" },
+            { cn: "磁盘", tw: "磁碟" },
+            { cn: "网卡", tw: "網卡" },
+            { cn: "网吧", tw: "網咖" },
+            { cn: "网站", tw: "網站" },
+            { cn: "网络", tw: "網路" },
+            { cn: "网语", tw: "網路語言" },
+            { cn: "网游", tw: "網遊" },
+            { cn: "网志", tw: "網誌" },
+            { cn: "网编", tw: "網編" },
+            { cn: "网调", tw: "網調" },
+            { cn: "宽带", tw: "寬頻" },
+            { cn: "回车", tw: "確認鍵" },
+            { cn: "沙士", tw: "SARS" },
+            { cn: "划价", tw: "批價" },
+            { cn: "涂片", tw: "抹片" },
+            { cn: "疝气", tw: "疝氣" },
+            { cn: "硅肺", tw: "矽肺" },
+            { cn: "伟哥", tw: "威而鋼" },
+            { cn: "护工", tw: "看護" },
+            { cn: "胸科", tw: "胸腔科" },
+            { cn: "汤剂", tw: "湯劑" },
+            { cn: "阳痿", tw: "陽痿" },
+            { cn: "过敏", tw: "過敏" },
+            { cn: "胃管", tw: "鼻胃管" },
+            { cn: "颌骨", tw: "頜骨" },
+            { cn: "筛检", tw: "篩檢" },
+            { cn: "检疫", tw: "檢疫" },
+            { cn: "点滴", tw: "點滴" },
+            { cn: "恐高", tw: "懼高" },
+            { cn: "体检", tw: "體檢" },
+            { cn: "临检", tw: "臨檢" },
+            { cn: "医改", tw: "醫改" },
+            { cn: "体位", tw: "體位" },
+            { cn: "天车", tw: "天車" },
+            { cn: "叉车", tw: "堆高機" },
+            { cn: "机制", tw: "機制" },
+            { cn: "小学", tw: "小學" },
+            { cn: "休学", tw: "休學" },
+            { cn: "同传", tw: "同步口譯" },
+            { cn: "托业", tw: "多益" },
+            { cn: "托班", tw: "安親班" },
+            { cn: "真题", tw: "考古題" },
+            { cn: "民校", tw: "私校" },
+            { cn: "电大", tw: "空大" },
+            { cn: "快班", tw: "前段班" },
+            { cn: "封三", tw: "封底裡" },
+            { cn: "封二", tw: "封面裡" },
+            { cn: "慢班", tw: "後段班" },
+            { cn: "导师", tw: "指導教授" },
+            { cn: "留级", tw: "留級" },
+            { cn: "级任", tw: "級任" },
+            { cn: "职高", tw: "高職" },
+            { cn: "专科", tw: "專科" },
+            { cn: "课件", tw: "教學軟體" },
+            { cn: "暴漫", tw: "梗漫" },
+            { cn: "猜题", tw: "猜題" },
+            { cn: "劳作", tw: "勞作" },
+            { cn: "扉页", tw: "扉頁" },
+            { cn: "答卷", tw: "答案卷" },
+            { cn: "枪替", tw: "槍替" },
+            { cn: "罢教", tw: "罷教" },
+            { cn: "阅卷", tw: "閱卷" },
+            { cn: "壁报", tw: "壁報" },
+            { cn: "学科", tw: "學科" },
+            { cn: "中学", tw: "中學" },
+            { cn: "高职", tw: "高職" },
+            { cn: "侨生", tw: "僑生" },
+            { cn: "单质", tw: "元素態物質" },
+            { cn: "市撮", tw: "公撮" },
+            { cn: "天择", tw: "天擇" },
+            { cn: "引物", tw: "引子" },
+            { cn: "尼龙", tw: "尼龍" },
+            { cn: "极夜", tw: "永夜" },
+            { cn: "白矾", tw: "白礬" },
+            { cn: "光纤", tw: "光纖" },
+            { cn: "守宫", tw: "守宮" },
+            { cn: "折光", tw: "折射光" },
+            { cn: "乳胶", tw: "乳膠" },
+            { cn: "受质", tw: "受質" },
+            { cn: "纳米", tw: "奈米" },
+            { cn: "硅片", tw: "矽片" },
+            { cn: "硅谷", tw: "矽谷" },
+            { cn: "硅胶", tw: "矽膠" },
+            { cn: "硅鋼", tw: "矽鋼" },
+            { cn: "硅藻", tw: "矽藻" },
+            { cn: "里氏", tw: "芮氏" },
+            { cn: "品脱", tw: "品脫" },
+            { cn: "施主", tw: "施子" },
+            { cn: "胚层", tw: "胚層" },
+            { cn: "飞碟", tw: "飛碟" },
+            { cn: "补集", tw: "差集" },
+            { cn: "核酶", tw: "核糖核酸酵素" },
+            { cn: "涂渍", tw: "浸塗" },
+            { cn: "航天", tw: "航太" },
+            { cn: "芯片", tw: "晶片" },
+            { cn: "栖地", tw: "棲地" },
+            { cn: "克隆", tw: "殖株" },
+            { cn: "裂化", tw: "裂解" },
+            { cn: "黄鼠", tw: "黃鼠" },
+            { cn: "黑鲪", tw: "黑鮶" },
+            { cn: "棱柱", tw: "稜柱" },
+            { cn: "棱锥", tw: "稜錐" },
+            { cn: "圣婴", tw: "聖嬰" },
+            { cn: "落尘", tw: "落塵" },
+            { cn: "跳闸", tw: "跳電" },
+            { cn: "莱塞", tw: "雷射器" },
+            { cn: "电容", tw: "電容" },
+            { cn: "电厂", tw: "電廠" },
+            { cn: "电炉", tw: "電爐" },
+            { cn: "熊猫", tw: "熊貓" },
+            { cn: "样带", tw: "樣帶" },
+            { cn: "质数", tw: "質數" },
+            { cn: "震中", tw: "震央" },
+            { cn: "烈度", tw: "震度" },
+            { cn: "熒光", tw: "螢光" },
+            { cn: "螺菌", tw: "螺旋菌" },
+            { cn: "鲯鳅", tw: "鯕鰍" },
+            { cn: "藻华", tw: "藻華" },
+            { cn: "蝾螈", tw: "蠑螈" },
+            { cn: "基盘", tw: "基盤" },
+            { cn: "热电", tw: "熱電" },
+            { cn: "猪草", tw: "豬草" },
+            { cn: "火环", tw: "火環" },
+            { cn: "离岛", tw: "離島" },
+            { cn: "介词", tw: "介詞" },
+            { cn: "比拟", tw: "比擬" },
+            { cn: "指画", tw: "指畫" },
+            { cn: "音诗", tw: "音詩" },
+            { cn: "倒叙", tw: "倒敘" },
+            { cn: "喻体", tw: "喻依" },
+            { cn: "本体", tw: "喻體" },
+            { cn: "词组", tw: "詞組" },
+            { cn: "小鍋", tw: "小耳朵" },
+            { cn: "卡带", tw: "卡帶" },
+            { cn: "话剧", tw: "話劇" },
+            { cn: "电影", tw: "電影" },
+            { cn: "网剧", tw: "網劇" },
+            { cn: "音像", tw: "影音" },
+            { cn: "录像", tw: "錄影" },
+            { cn: "戏路", tw: "戲路" },
+            { cn: "悬疑", tw: "懸疑" },
+            { cn: "房车", tw: "露營車" },
+            { cn: "自诉", tw: "自訴" },
+            { cn: "拘传", tw: "拘提" },
+            { cn: "东盟", tw: "東協" },
+            { cn: "峰会", tw: "峰會" },
+            { cn: "海盗", tw: "海盜" },
+            { cn: "诉愿", tw: "訴願" },
+            { cn: "传讯", tw: "傳訊" },
+            { cn: "惯盗", tw: "慣盜" },
+            { cn: "罚款", tw: "罰鍰" },
+            { cn: "踩点", tw: "踩點" },
+            { cn: "轮奸", tw: "輪姦" },
+            { cn: "警员", tw: "警員" },
+            { cn: "上诉", tw: "上訴" },
+            { cn: "市镇", tw: "市鎮" },
+            { cn: "政审", tw: "政審" },
+            { cn: "蓝军", tw: "藍軍" },
+            { cn: "决标", tw: "決標" },
+            { cn: "底价", tw: "底價" },
+            { cn: "拍卖", tw: "拍賣" },
+            { cn: "质检", tw: "品檢" },
+            { cn: "缺货", tw: "缺貨" },
+            { cn: "畅销", tw: "暢銷" },
+            { cn: "网拍", tw: "網拍" },
+            { cn: "营运", tw: "營運" },
+            { cn: "柜台", tw: "櫃檯" },
+            { cn: "国企", tw: "國企" },
+            { cn: "比索", tw: "披索" },
+            { cn: "长红", tw: "長紅" },
+            { cn: "国库", tw: "國庫" },
+            { cn: "国税", tw: "國稅" },
+            { cn: "通兌", tw: "通提" },
+            { cn: "通存", tw: "通儲" },
+            { cn: "硬币", tw: "硬幣" },
+            { cn: "税票", tw: "稅票" },
+            { cn: "超支", tw: "超領" },
+            { cn: "进项", tw: "進項" },
+            { cn: "网银", tw: "網銀" },
+            { cn: "欧元", tw: "歐元" },
+            { cn: "盘跌", tw: "盤跌" },
+            { cn: "充值", tw: "儲值" },
+            { cn: "金库", tw: "金庫" },
+            { cn: "脱产", tw: "脫產" },
+            { cn: "劳保", tw: "勞保" },
+            { cn: "税单", tw: "稅單" },
+            { cn: "农保", tw: "農保" },
+            { cn: "联贷", tw: "聯貸" },
+            { cn: "代沟", tw: "代溝" },
+            { cn: "基层", tw: "基層" },
+            { cn: "扫黑", tw: "掃黑" },
+            { cn: "牵线", tw: "牽線" },
+            { cn: "软件", tw: "軟體" },
+            { cn: "报导", tw: "報導" },
+            { cn: "舞龙", tw: "舞龍" },
+            { cn: "认养", tw: "認養" },
+            { cn: "导语", tw: "導言" },
+            { cn: "树葬", tw: "樹葬" },
+            { cn: "双响", tw: "雙響" },
+            { cn: "朋克", tw: "龐克" },
+            { cn: "公关", tw: "公關" },
+            { cn: "插队", tw: "插隊" },
+            { cn: "庙祝", tw: "廟祝" },
+            { cn: "鱼苗", tw: "魚苗" },
+            { cn: "农膜", tw: "農膜" },
+            { cn: "网箱", tw: "箱網" },
+            { cn: "轮作", tw: "輪作" },
+            { cn: "铁粉", tw: "鐵粉" },
+            { cn: "农会", tw: "農會" },
+            { cn: "工会", tw: "工會" },
+            { cn: "工棚", tw: "工寮" },
+            { cn: "出师", tw: "出師" },
+            { cn: "联聘", tw: "合聘" },
+            { cn: "年资", tw: "年資" },
+            { cn: "调薪", tw: "調薪" },
+            { cn: "离任", tw: "離任" },
+            { cn: "续聘", tw: "續聘" },
+            { cn: "缺编", tw: "缺編" },
+            { cn: "挂点", tw: "掛點" },
+            { cn: "出头", tw: "出頭" },
+            { cn: "速溶", tw: "即溶" },
+            { cn: "定时", tw: "定時" },
+            { cn: "招数", tw: "招數" },
+            { cn: "立式", tw: "直立式" },
+            { cn: "花样", tw: "花式" },
+            { cn: "品质", tw: "品質" },
+            { cn: "海吹", tw: "哈拉" },
+            { cn: "阿嚏", tw: "哈啾" },
+            { cn: "穿帮", tw: "穿幫" },
+            { cn: "拿乔", tw: "拿喬" },
+            { cn: "免冠", tw: "脫帽" },
+            { cn: "准点", tw: "準點" },
+            { cn: "信息", tw: "資訊" },
+            { cn: "烫发", tw: "燙髮" },
+            { cn: "离题", tw: "離題" },
+            { cn: "摄像", tw: "攝影" },
+            { cn: "正点", tw: "正點" },
+            { cn: "空档", tw: "空檔" },
+            { cn: "晨练", tw: "晨練" },
+            { cn: "脱线", tw: "脫線" },
+            { cn: "摸头", tw: "摸頭" },
+            { cn: "满点", tw: "滿點" },
+            { cn: "窝心", tw: "窩心" },
+            { cn: "铁齿", tw: "鐵齒" },
+            { cn: "比萨", tw: "比薩" },
+            { cn: "泡面", tw: "泡麵" },
+            { cn: "盒饭", tw: "盒飯" },
+            { cn: "风衣", tw: "風衣" },
+            { cn: "套装", tw: "套裝" },
+            { cn: "套裤", tw: "套褲" },
+            { cn: "马海", tw: "馬海" },
+            { cn: "裤袜", tw: "褲襪" },
+            { cn: "缩水", tw: "縮水" },
+            { cn: "衬衫", tw: "襯衫" },
+            { cn: "地砖", tw: "地磚" },
+            { cn: "现房", tw: "成屋" },
+            { cn: "房本", tw: "房屋所有權狀" },
+            { cn: "空桥", tw: "空橋" },
+            { cn: "盲降", tw: "儀降" },
+            { cn: "挂挡", tw: "入檔" },
+            { cn: "内胎", tw: "內胎" },
+            { cn: "升挡", tw: "升擋" },
+            { cn: "轿车", tw: "轎車" },
+            { cn: "公车", tw: "公車" },
+            { cn: "重车", tw: "重車" },
+            { cn: "压车", tw: "壓車" },
+            { cn: "座车", tw: "座車" },
+            { cn: "天桥", tw: "天橋" },
+            { cn: "快递", tw: "快遞" },
+            { cn: "货柜", tw: "貨櫃" },
+            { cn: "运能", tw: "運能" },
+            { cn: "保修", tw: "保固" },
+            { cn: "展销", tw: "展銷" },
+            { cn: "展柜", tw: "展櫃" },
+            { cn: "推车", tw: "推車" },
+            { cn: "小开", tw: "小開" },
+            { cn: "阿飞", tw: "太保" },
+            { cn: "保安", tw: "保全" },
+            { cn: "深喉", tw: "深喉嚨" },
+            { cn: "邮差", tw: "郵差" },
+            { cn: "黄牛", tw: "黃牛" },
+            { cn: "高清", tw: "高畫質" },
+            { cn: "条码", tw: "條碼" },
+            { cn: "软盘", tw: "軟碟" },
+            { cn: "固件", tw: "韌體" },
+            { cn: "鼠标", tw: "滑鼠" },
+            { cn: "死机", tw: "當機" },
+            { cn: "烧录", tw: "燒錄" },
+            { cn: "屏保", tw: "螢幕保護程式" },
+            { cn: "选单", tw: "選單" },
+            { cn: "网真", tw: "擬真視訊" },
+            { cn: "蓝屏", tw: "藍白當機畫面" },
+            { cn: "转帖", tw: "轉帖" },
+            { cn: "触屏", tw: "觸控式螢幕" },
+            { cn: "显卡", tw: "顯卡" },
+            { cn: "连线", tw: "連線" },
+            { cn: "邮编", tw: "郵遞區號" },
+            { cn: "手机", tw: "手機" },
+            { cn: "彩信", tw: "多媒體簡訊" },
+            { cn: "免提", tw: "免持" },
+            { cn: "彩铃", tw: "來電答鈴" },
+            { cn: "窄带", tw: "窄頻帶" },
+            { cn: "频宽", tw: "頻寬" },
+            { cn: "听筒", tw: "聽筒" },
+            { cn: "代母", tw: "代理孕母" },
+            { cn: "皮炎", tw: "皮膚炎" },
+            { cn: "剧目", tw: "劇目" },
+            { cn: "觱达", tw: "觱達" },
+            { cn: "饶舌", tw: "饒舌" },
+            { cn: "帆板", tw: "風浪板" },
+            { cn: "蹦极", tw: "高空彈跳" },
+            { cn: "轮滑", tw: "滑輪溜冰" },
+            { cn: "门球", tw: "槌球" },
+            { cn: "蹦床", tw: "彈翻床" },
+            { cn: "热身", tw: "熱身" },
+            { cn: "速滑", tw: "競速滑冰" },
+            { cn: "篮圈", tw: "籃圈" },
+            { cn: "党工", tw: "黨工" },
+            { cn: "旗舰", tw: "旗艦" },
+            { cn: "导弹", tw: "導彈" },
+            { cn: "中介", tw: "仲介" },
+            { cn: "入赘", tw: "入贅" },
+            { cn: "工运", tw: "工運" },
+            { cn: "公历", tw: "公曆" },
+
+        // ===== taiwan_china 詞庫（繁體形式，opencc 之後） =====
+            { cn: "阿拉伯聯合酋長國", tw: "阿拉伯聯合大公國" },
+            { cn: "xx年/00後", tw: "直接講年份" },
+            { cn: "半截美，的士頭", tw: "發財車" },
+            { cn: "小太陽，小皇帝", tw: "獨生子，獨生女" },
+            { cn: "站著說話不腰疼", tw: "風涼話" },
+            { cn: "賣大號，賣大戶", tw: "量販" },
+            { cn: "半包價式旅遊", tw: "半自助式旅遊" },
+            { cn: "花帶子，黃帶", tw: "A片" },
+            { cn: "道․瓊斯指數", tw: "道瓊指數" },
+            { cn: "高標準內銷房", tw: "高級住宅" },
+            { cn: "crush", tw: "暗戀對象" },
+            { cn: "使用者友好", tw: "使用者友善" },
+            { cn: "個人計算機", tw: "個人電腦" },
+            { cn: "兒童文化宮", tw: "兒童活動中心" },
+            { cn: "只讀存儲器", tw: "唯讀記憶體" },
+            { cn: "哥特式藝術", tw: "哥德式藝術" },
+            { cn: "多國家公司", tw: "跨國公司" },
+            { cn: "小型單放機", tw: "隨身聽" },
+            { cn: "居民身分證", tw: "國民身分證" },
+            { cn: "巴羅克藝術", tw: "巴洛克藝術" },
+            { cn: "攤床，攤檔", tw: "攤位" },
+            { cn: "斷檔、缺售", tw: "缺貨" },
+            { cn: "旺銷，快銷", tw: "暢銷" },
+            { cn: "激光打印機", tw: "雷射印表機" },
+            { cn: "現實很骨感", tw: "現實很殘酷" },
+            { cn: "發光二極管", tw: "發光二極體" },
+            { cn: "科技與狠活", tw: "加工食品" },
+            { cn: "第三次浪潮", tw: "第三波" },
+            { cn: "筆記本電腦", tw: "筆記型電腦" },
+            { cn: "臺式計算機", tw: "桌上型電腦" },
+            { cn: "資源管理器", tw: "資料總管" },
+            { cn: "踩屎感拖鞋", tw: "發泡拖鞋" },
+            { cn: "電視系列片", tw: "電視影集" },
+            { cn: "風景微縮區", tw: "小人國" },
+            { cn: "飛機乘務員", tw: "空服員" },
+            { cn: "AWSL", tw: "啊我死了" },
+            { cn: "YYDS", tw: "永遠的神" },
+            { cn: "丁克夫妻", tw: "頂克族" },
+            { cn: "中國台灣", tw: "台灣" },
+            { cn: "也是醉了", tw: "沒救了" },
+            { cn: "乾/油皮", tw: "乾" },
+            { cn: "亭式車站", tw: "候車亭" },
+            { cn: "低常兒童", tw: "低能兒，智障兒" },
+            { cn: "保職停薪", tw: "留職停薪" },
+            { cn: "兄弟院校", tw: "姊妹校" },
+            { cn: "全線飄紅", tw: "長紅" },
+            { cn: "八旗子弟", tw: "紈褲子弟" },
+            { cn: "利比里亞", tw: "賴比瑞亞" },
+            { cn: "前方高能", tw: "注意" },
+            { cn: "勞動保險", tw: "勞工保險" },
+            { cn: "勞逸結合", tw: "適時休息" },
+            { cn: "北京時間", tw: "中原標準時間" },
+            { cn: "半邊家庭", tw: "單親家庭" },
+            { cn: "博取眼球", tw: "引人注目" },
+            { cn: "危地馬拉", tw: "瓜地馬拉" },
+            { cn: "厄瓜多爾", tw: "厄瓜多" },
+            { cn: "受獎產品", tw: "得獎產品" },
+            { cn: "吸引眼球", tw: "引人矚目" },
+            { cn: "嘎嘎好吃", tw: "超好吃" },
+            { cn: "坦桑尼亞", tw: "坦尚尼亞" },
+            { cn: "外圍設備", tw: "周邊設備" },
+            { cn: "大氣污染", tw: "空氣污染" },
+            { cn: "大秀一波", tw: "大顯身手" },
+            { cn: "奧術魔刃", tw: "ASMR" },
+            { cn: "尾氣測量", tw: "排氣測量" },
+            { cn: "屏幕文字", tw: "字幕" },
+            { cn: "崗位培訓", tw: "在職訓練" },
+            { cn: "幾個意思", tw: "什麼意思" },
+            { cn: "底層邏輯", tw: "核心原理" },
+            { cn: "廠校掛鉤", tw: "建教合作" },
+            { cn: "廣告電影", tw: "廣告片" },
+            { cn: "引廠進店", tw: "專櫃" },
+            { cn: "忙音信號", tw: "忙線訊號" },
+            { cn: "情緒價值", tw: "關愛" },
+            { cn: "愛侶動物", tw: "寵物" },
+            { cn: "慈悲殺人", tw: "安樂死" },
+            { cn: "慌得一批", tw: "十分慌張" },
+            { cn: "撥號工具", tw: "撥號器" },
+            { cn: "操作系統", tw: "作業系統" },
+            { cn: "放飛自我", tw: "隨心所欲" },
+            { cn: "政治避難", tw: "政治庇護" },
+            { cn: "救命電話", tw: "生命線" },
+            { cn: "數字唱片", tw: "數位唱片" },
+            { cn: "文娛活動", tw: "康樂活動" },
+            { cn: "斯威士蘭", tw: "史瓦濟蘭" },
+            { cn: "旅遊農業", tw: "觀光農業" },
+            { cn: "普利策獎", tw: "普利茲獎" },
+            { cn: "智力玩具", tw: "益智玩具" },
+            { cn: "有一說一", tw: "平心而論" },
+            { cn: "業餘活動", tw: "休閒活動" },
+            { cn: "毛腳女婿", tw: "準女婿" },
+            { cn: "毛腳媳婦", tw: "準媳婦" },
+            { cn: "沸點新聞", tw: "焦點新聞" },
+            { cn: "渲染管線", tw: "彩現方式" },
+            { cn: "漢姆雷特", tw: "哈姆雷特" },
+            { cn: "激光唱機", tw: "雷射唱盤" },
+            { cn: "激光視盤", tw: "影碟" },
+            { cn: "灰色影片", tw: "大爛片" },
+            { cn: "無塵粉筆", tw: "無灰粉筆" },
+            { cn: "無用信息", tw: "雜訊" },
+            { cn: "無繩電話", tw: "無線電話" },
+            { cn: "生活碎片", tw: "生活點滴" },
+            { cn: "生物食品", tw: "天然食品" },
+            { cn: "監督電話", tw: "投訴電話" },
+            { cn: "盲人學校", tw: "啟明學校" },
+            { cn: "知識密集", tw: "技術密集" },
+            { cn: "知識產權", tw: "智慧財產權" },
+            { cn: "社交網站", tw: "社群網站" },
+            { cn: "社交軟體", tw: "社群軟體" },
+            { cn: "空中客車", tw: "空中巴士" },
+            { cn: "第三產業", tw: "服務業" },
+            { cn: "第二職業", tw: "副業" },
+            { cn: "第二課堂", tw: "課外活動" },
+            { cn: "系列企業", tw: "關係企業" },
+            { cn: "統一意見", tw: "共識" },
+            { cn: "綠色食品", tw: "健康食品" },
+            { cn: "編程語言", tw: "程式語言" },
+            { cn: "腦洞大開", tw: "異想天開" },
+            { cn: "臨時戶口", tw: "流動戶口" },
+            { cn: "自選市場", tw: "超級市場" },
+            { cn: "莫桑比克", tw: "莫三鼻克" },
+            { cn: "螢幕廣告", tw: "電視廣告" },
+            { cn: "被動吸菸", tw: "抽二手菸" },
+            { cn: "視頻電話", tw: "視訊電話" },
+            { cn: "課時工資", tw: "鐘點費" },
+            { cn: "資料綁定", tw: "資料繫結" },
+            { cn: "質量管理", tw: "品質管制" },
+            { cn: "超常兒童", tw: "天才兒童" },
+            { cn: "趕due", tw: "趕死線" },
+            { cn: "跟蹤服務", tw: "售後服務" },
+            { cn: "踩一捧一", tw: "自抬身價" },
+            { cn: "退出登錄", tw: "登出" },
+            { cn: "通宵電影", tw: "午夜場" },
+            { cn: "陰陽怪氣", tw: "嘰嘰歪歪" },
+            { cn: "集成圖形", tw: "整合圖形" },
+            { cn: "集成電路", tw: "積體電路" },
+            { cn: "零幀起手", tw: "出其不意" },
+            { cn: "電子信函", tw: "電子郵件" },
+            { cn: "電子屏幕", tw: "電子看板" },
+            { cn: "電子陽痿", tw: "失去興趣" },
+            { cn: "電腦磁盤", tw: "磁碟" },
+            { cn: "電腦紅娘", tw: "電腦擇友" },
+            { cn: "電視大學", tw: "空中大學" },
+            { cn: "高等院校", tw: "大專院校" },
+            { cn: "步行街", tw: "行人徒步區" },
+            { cn: "emo", tw: "悲從中來" },
+            { cn: "ins", tw: "IG" },
+            { cn: "一次性", tw: "免洗" },
+            { cn: "一陣風", tw: "三分鐘熱度" },
+            { cn: "一風吹", tw: "一筆勾銷" },
+            { cn: "三文魚", tw: "鮭魚" },
+            { cn: "上座率", tw: "票房紀錄" },
+            { cn: "下午好", tw: "午安" },
+            { cn: "不科學", tw: "不合理" },
+            { cn: "主人公", tw: "主角" },
+            { cn: "二流子", tw: "流氓" },
+            { cn: "互聯網", tw: "網路" },
+            { cn: "亞像素", tw: "子像素" },
+            { cn: "代用鹽", tw: "低鈉鹽" },
+            { cn: "任務欄", tw: "工作列" },
+            { cn: "份兒飯", tw: "套餐" },
+            { cn: "保暖杯", tw: "保溫杯" },
+            { cn: "保育院", tw: "育幼院" },
+            { cn: "信息素", tw: "費洛蒙" },
+            { cn: "信息量", tw: "資訊量" },
+            { cn: "俯臥撐", tw: "伏地挺身" },
+            { cn: "倒讀秒", tw: "倒數計時" },
+            { cn: "健美褲", tw: "韻律褲" },
+            { cn: "傳感器", tw: "感測器" },
+            { cn: "億點點", tw: "超大一點" },
+            { cn: "充電寶", tw: "行動電源" },
+            { cn: "光刻機", tw: "曝光機" },
+            { cn: "光榮榜", tw: "榮譽榜" },
+            { cn: "全家桶", tw: "方案" },
+            { cn: "公交車", tw: "公車" },
+            { cn: "出版物", tw: "出版品" },
+            { cn: "出租車", tw: "計程車" },
+            { cn: "分數線", tw: "最低錄取標準" },
+            { cn: "列車員", tw: "車掌" },
+            { cn: "刷手機", tw: "滑手機" },
+            { cn: "刷新率", tw: "更新率" },
+            { cn: "剃鬚刀", tw: "刮鬚刀" },
+            { cn: "動畫片", tw: "卡通片" },
+            { cn: "卡塔爾", tw: "卡達" },
+            { cn: "原珠筆", tw: "原子筆" },
+            { cn: "原音帶", tw: "原聲帶" },
+            { cn: "反安裝", tw: "解除安裝" },
+            { cn: "含金量", tw: "知識含量" },
+            { cn: "吹喇叭", tw: "拍馬屁" },
+            { cn: "商標菜", tw: "招牌菜" },
+            { cn: "喇叭筒", tw: "擴音器" },
+            { cn: "單本劇", tw: "單元劇" },
+            { cn: "單身狗", tw: "單身漢" },
+            { cn: "回頭客", tw: "常客，老顧客" },
+            { cn: "圖瓦盧", tw: "吐瓦魯" },
+            { cn: "土豆條", tw: "薯條" },
+            { cn: "大實話", tw: "真心話" },
+            { cn: "大概率", tw: "大概" },
+            { cn: "大面積", tw: "大範圍" },
+            { cn: "天花板", tw: "頂級" },
+            { cn: "太卷了", tw: "過度競爭" },
+            { cn: "太牛了", tw: "太強了" },
+            { cn: "夾子音", tw: "很ㄋㄟ" },
+            { cn: "婚外戀", tw: "婚外情" },
+            { cn: "字符串", tw: "字串" },
+            { cn: "富二代", tw: "小開" },
+            { cn: "實打實", tw: "穩紮穩打" },
+            { cn: "寬心丸", tw: "定心丸" },
+            { cn: "導火索", tw: "導火線" },
+            { cn: "小作文", tw: "小論文" },
+            { cn: "小哥哥", tw: "帥哥" },
+            { cn: "小姊姊", tw: "美女" },
+            { cn: "小金庫", tw: "私房錢" },
+            { cn: "小電驢", tw: "電動自行車" },
+            { cn: "岡比亞", tw: "甘比亞" },
+            { cn: "巨好吃", tw: "超好吃" },
+            { cn: "帶節奏", tw: "帶風向" },
+            { cn: "床上戲", tw: "床戲" },
+            { cn: "底板價", tw: "基價，底價" },
+            { cn: "彩電牆", tw: "電視牆" },
+            { cn: "很好的", tw: "妥善地" },
+            { cn: "復映片", tw: "二輪片" },
+            { cn: "微交易", tw: "小額付費" },
+            { cn: "志願者", tw: "志工" },
+            { cn: "性價比", tw: "CP值" },
+            { cn: "慢運動", tw: "慢動作" },
+            { cn: "手動檔", tw: "手排" },
+            { cn: "打印機", tw: "列印機" },
+            { cn: "打橫泡", tw: "攪局" },
+            { cn: "打醬油", tw: "湊熱鬧" },
+            { cn: "抑鬱症", tw: "憂鬱症" },
+            { cn: "抓空字", tw: "抽空" },
+            { cn: "掃描儀", tw: "掃描器" },
+            { cn: "探親假", tw: "省親假" },
+            { cn: "接地氣", tw: "親民" },
+            { cn: "擴展塢", tw: "擴充埠" },
+            { cn: "攝像機", tw: "攝影機" },
+            { cn: "攝像頭", tw: "相機" },
+            { cn: "收轉臺", tw: "轉播站" },
+            { cn: "故事片", tw: "劇情片" },
+            { cn: "救生盒", tw: "急救箱" },
+            { cn: "數據庫", tw: "資料庫" },
+            { cn: "新西蘭", tw: "紐西蘭" },
+            { cn: "方便面", tw: "泡麵" },
+            { cn: "方便麵", tw: "泡麵" },
+            { cn: "旅遊局", tw: "觀光局" },
+            { cn: "旅遊車", tw: "遊覽車" },
+            { cn: "早上好", tw: "早安" },
+            { cn: "晚上好", tw: "晚安" },
+            { cn: "智殘人", tw: "智障人士" },
+            { cn: "朋友圈", tw: "交友圈" },
+            { cn: "服務員", tw: "服務生" },
+            { cn: "服務器", tw: "伺服器" },
+            { cn: "本地化", tw: "在地化" },
+            { cn: "本科生", tw: "大學生" },
+            { cn: "桑拿浴", tw: "三溫暖" },
+            { cn: "條形碼", tw: "條碼" },
+            { cn: "樂子人", tw: "愉悅犯" },
+            { cn: "步談機", tw: "對講機" },
+            { cn: "殘次品", tw: "瑕疵品" },
+            { cn: "毛玻璃", tw: "磨砂玻璃" },
+            { cn: "民政局", tw: "戶政事務所" },
+            { cn: "氛圍感", tw: "vibe" },
+            { cn: "水門汀", tw: "水泥" },
+            { cn: "沒可能", tw: "不可能" },
+            { cn: "沒毛病", tw: "沒什麼問題" },
+            { cn: "沒誰了", tw: "無人能敵" },
+            { cn: "洗面奶", tw: "洗面乳" },
+            { cn: "洗髮水", tw: "洗髮精" },
+            { cn: "流媒體", tw: "串流媒體" },
+            { cn: "流水線", tw: "生產線" },
+            { cn: "混血車", tw: "拼裝車" },
+            { cn: "潑髒水", tw: "造謠" },
+            { cn: "激活碼", tw: "啟動序號" },
+            { cn: "炊事員", tw: "廚師" },
+            { cn: "無節操", tw: "不道德" },
+            { cn: "熒光屏", tw: "螢光幕" },
+            { cn: "牛油果", tw: "酪梨" },
+            { cn: "牛鼻子", tw: "關鍵" },
+            { cn: "獲得者", tw: "得主" },
+            { cn: "獼猴桃", tw: "奇異果" },
+            { cn: "玩脫了", tw: "玩過頭" },
+            { cn: "畢加索", tw: "畢卡索" },
+            { cn: "異地戀", tw: "遠距離" },
+            { cn: "發照片", tw: "傳照片" },
+            { cn: "盧旺達", tw: "盧安達" },
+            { cn: "破壁機", tw: "果汁機" },
+            { cn: "破碼器", tw: "解碼器" },
+            { cn: "硅藻土", tw: "矽藻土" },
+            { cn: "票販子", tw: "黃牛" },
+            { cn: "程序員", tw: "程式設計師" },
+            { cn: "空調鞋", tw: "氣墊鞋" },
+            { cn: "突尼斯", tw: "突尼西亞" },
+            { cn: "立交橋", tw: "交流道" },
+            { cn: "索馬里", tw: "索馬利亞" },
+            { cn: "絕絕子", tw: "無人能敵" },
+            { cn: "繃不住", tw: "忍不住" },
+            { cn: "老視眼", tw: "老花眼" },
+            { cn: "肉食鴿", tw: "食用鴿" },
+            { cn: "肯尼亞", tw: "肯亞" },
+            { cn: "腦流失", tw: "人才外流" },
+            { cn: "自動檔", tw: "自排" },
+            { cn: "自定義", tw: "客製化" },
+            { cn: "草泥馬", tw: "羊駝" },
+            { cn: "莫差特", tw: "莫札特" },
+            { cn: "萌萌噠", tw: "很可愛" },
+            { cn: "薅羊毛", tw: "精打細算" },
+            { cn: "蘇里南", tw: "蘇利南" },
+            { cn: "螺絲批", tw: "螺絲起子" },
+            { cn: "衛生巾", tw: "衛生棉" },
+            { cn: "衛生筷", tw: "免洗筷" },
+            { cn: "西紅柿", tw: "（牛）蕃茄" },
+            { cn: "計算機", tw: "電腦" },
+            { cn: "記憶棒", tw: "MS 記憶卡" },
+            { cn: "註冊表", tw: "系統資料庫" },
+            { cn: "評論區", tw: "留言區" },
+            { cn: "謎語人", tw: "拐彎抹角" },
+            { cn: "負一屏", tw: "資訊主頁" },
+            { cn: "贊比亞", tw: "尚比亞" },
+            { cn: "走讀生", tw: "通學生" },
+            { cn: "跳樓機", tw: "大怒神" },
+            { cn: "蹭熱度", tw: "跟風" },
+            { cn: "軟件包", tw: "套裝軟體" },
+            { cn: "軟包裝", tw: "鋁箔包" },
+            { cn: "轉折點", tw: "轉捩點" },
+            { cn: "辣眼睛", tw: "慘不忍睹" },
+            { cn: "過街橋", tw: "天橋" },
+            { cn: "達芬奇", tw: "達文西" },
+            { cn: "適配器", tw: "變壓器" },
+            { cn: "避孕套", tw: "保險套" },
+            { cn: "郵遞員", tw: "郵差" },
+            { cn: "酸牛奶", tw: "優酪乳" },
+            { cn: "鐵哥們", tw: "哥兒們" },
+            { cn: "長知識", tw: "學到了" },
+            { cn: "開門紅", tw: "好采頭" },
+            { cn: "除塵器", tw: "吸塵器" },
+            { cn: "集裝箱", tw: "貨櫃" },
+            { cn: "電熱毯", tw: "電毯" },
+            { cn: "青年宮", tw: "青年活動中心" },
+            { cn: "頂不住", tw: "撐不住" },
+            { cn: "預製菜", tw: "調理包" },
+            { cn: "馬拉維", tw: "馬拉威" },
+            { cn: "高壓鍋", tw: "壓力鍋" },
+            { cn: "高大上", tw: "高貴" },
+            { cn: "魚塘局", tw: "新手場" },
+            { cn: "龍傲天", tw: "開掛仔" },
+            { cn: "字段", tw: "資料欄" },
+            { cn: "端口", tw: "通訊埠" },
+            { cn: "U盤", tw: "USB隨身碟" },
+            { cn: "三觀", tw: "價值觀" },
+            { cn: "上學", tw: "讀書" },
+            { cn: "上岸", tw: "上榜" },
+            { cn: "上頭", tw: "有感" },
+            { cn: "下崗", tw: "失業" },
+            { cn: "下頭", tw: "很解" },
+            { cn: "丟失", tw: "遺失" },
+            { cn: "中標", tw: "得標" },
+            { cn: "串子", tw: "反串" },
+            { cn: "主存", tw: "主記憶體" },
+            { cn: "主板", tw: "主機板" },
+            { cn: "乍得", tw: "查德" },
+            { cn: "也門", tw: "葉門" },
+            { cn: "二哈", tw: "哈士奇" },
+            { cn: "互噴", tw: "互罵" },
+            { cn: "交互", tw: "互動" },
+            { cn: "京劇", tw: "國劇" },
+            { cn: "估計", tw: "可能" },
+            { cn: "佈局", tw: "格局" },
+            { cn: "低端", tw: "低級" },
+            { cn: "低谷", tw: "谷底" },
+            { cn: "低配", tw: "低階" },
+            { cn: "作死", tw: "找死" },
+            { cn: "倒休", tw: "調班" },
+            { cn: "假牌", tw: "仿冒品" },
+            { cn: "做底", tw: "打底" },
+            { cn: "做死", tw: "找死" },
+            { cn: "優化", tw: "最佳化" },
+            { cn: "充能", tw: "蓄能" },
+            { cn: "光標", tw: "游標" },
+            { cn: "光盤", tw: "光碟" },
+            { cn: "內函", tw: "影射" },
+            { cn: "內卷", tw: "過度競爭" },
+            { cn: "內存", tw: "記憶體" },
+            { cn: "內核", tw: "核心" },
+            { cn: "內貿", tw: "內銷" },
+            { cn: "全局", tw: "全域" },
+            { cn: "全屏", tw: "全螢幕" },
+            { cn: "全網", tw: "整個網路上" },
+            { cn: "公交", tw: "公車" },
+            { cn: "公房", tw: "公家宿舍" },
+            { cn: "共情", tw: "共感" },
+            { cn: "兼容", tw: "相容" },
+            { cn: "冰棍", tw: "冰棒" },
+            { cn: "冰毒", tw: "安非他命" },
+            { cn: "冷背", tw: "冷門" },
+            { cn: "冷麵", tw: "涼麵" },
+            { cn: "凡高", tw: "梵谷" },
+            { cn: "出片", tw: "很好拍" },
+            { cn: "出糧", tw: "領薪水" },
+            { cn: "分成", tw: "抽成" },
+            { cn: "利稅", tw: "營業稅" },
+            { cn: "利索", tw: "俐落" },
+            { cn: "刷新", tw: "重新整理" },
+            { cn: "前沿", tw: "尖端" },
+            { cn: "創建", tw: "建立" },
+            { cn: "包郵", tw: "含運" },
+            { cn: "匹配", tw: "配對" },
+            { cn: "升級", tw: "更新" },
+            { cn: "協議", tw: "協定" },
+            { cn: "博主", tw: "KOL" },
+            { cn: "卸載", tw: "移除" },
+            { cn: "反饋", tw: "反應" },
+            { cn: "受眾", tw: "閱聽人" },
+            { cn: "句柄", tw: "控制代碼" },
+            { cn: "句號", tw: "句點" },
+            { cn: "吃瓜", tw: "看八卦" },
+            { cn: "合同", tw: "合約" },
+            { cn: "吊空", tw: "暴漲" },
+            { cn: "吧唧", tw: "胸章" },
+            { cn: "咋的", tw: "怎麼樣" },
+            { cn: "唯書", tw: "死讀書" },
+            { cn: "啞光", tw: "霧面" },
+            { cn: "單位", tw: "組織" },
+            { cn: "嘎了", tw: "死了" },
+            { cn: "嘴替", tw: "代言人" },
+            { cn: "噴子", tw: "嘴砲" },
+            { cn: "四愛", tw: "女攻男受" },
+            { cn: "回放", tw: "重播" },
+            { cn: "回滾", tw: "還原" },
+            { cn: "回車", tw: "enter" },
+            { cn: "圈粉", tw: "粉絲" },
+            { cn: "圈錢", tw: "騙錢" },
+            { cn: "國企", tw: "國營事業" },
+            { cn: "圖像", tw: "影像" },
+            { cn: "圖標", tw: "圖示" },
+            { cn: "土豆", tw: "馬鈴薯" },
+            { cn: "在線", tw: "線上" },
+            { cn: "埠口", tw: "通訊埠" },
+            { cn: "堵車", tw: "塞車" },
+            { cn: "塑料", tw: "塑膠" },
+            { cn: "壁紙", tw: "桌面" },
+            { cn: "夜餐", tw: "宵夜" },
+            { cn: "大佬", tw: "高手" },
+            { cn: "大腕", tw: "重量級人物" },
+            { cn: "大鍋", tw: "小耳朵" },
+            { cn: "奇葩", tw: "怪胎" },
+            { cn: "套娃", tw: "巢狀" },
+            { cn: "套服", tw: "套裝" },
+            { cn: "套路", tw: "老梗" },
+            { cn: "奶茶", tw: "手搖" },
+            { cn: "妹紙", tw: "女生" },
+            { cn: "姥姥", tw: "外婆" },
+            { cn: "媽生", tw: "天生" },
+            { cn: "嫩膚", tw: "護膚" },
+            { cn: "字節", tw: "位元組" },
+            { cn: "學渣", tw: "吊車尾" },
+            { cn: "學霸", tw: "資優生" },
+            { cn: "官宣", tw: "正式宣布" },
+            { cn: "實屬", tw: "確實" },
+            { cn: "實時", tw: "即時" },
+            { cn: "實錘", tw: "證實" },
+            { cn: "寶寶", tw: "寶貝" },
+            { cn: "封禁", tw: "封鎖" },
+            { cn: "專列", tw: "加班車" },
+            { cn: "尋呼", tw: "呼叫" },
+            { cn: "尋思", tw: "想說" },
+            { cn: "小區", tw: "社區" },
+            { cn: "小帳", tw: "小費" },
+            { cn: "小號", tw: "分身帳號" },
+            { cn: "尖子", tw: "傑出人士" },
+            { cn: "尖端", tw: "頂尖" },
+            { cn: "尬黑", tw: "抹黑" },
+            { cn: "尿性", tw: "個性" },
+            { cn: "屌絲", tw: "魯蛇" },
+            { cn: "屏幕", tw: "螢幕" },
+            { cn: "屏蔽", tw: "隱藏" },
+            { cn: "展賣", tw: "展售" },
+            { cn: "屬實", tw: "真的是" },
+            { cn: "山寨", tw: "仿冒" },
+            { cn: "嵌套", tw: "巢狀" },
+            { cn: "巡診", tw: "巡迴醫療" },
+            { cn: "工齡", tw: "年資" },
+            { cn: "巨大", tw: "龐大" },
+            { cn: "差評", tw: "負評" },
+            { cn: "巴適", tw: "不錯" },
+            { cn: "帖子", tw: "貼文" },
+            { cn: "帶感", tw: "有感觸" },
+            { cn: "常量", tw: "常數" },
+            { cn: "干飯", tw: "吃飯" },
+            { cn: "平替", tw: "平價版" },
+            { cn: "底氣", tw: "骨氣" },
+            { cn: "彩電", tw: "彩色電視機" },
+            { cn: "很火", tw: "很紅" },
+            { cn: "很絕", tw: "超屌" },
+            { cn: "很頂", tw: "很讚" },
+            { cn: "後備", tw: "備份" },
+            { cn: "快進", tw: "快轉" },
+            { cn: "思路", tw: "思考邏輯" },
+            { cn: "性格", tw: "個性" },
+            { cn: "恰飯", tw: "工商" },
+            { cn: "悲摧", tw: "催淚" },
+            { cn: "慣偷", tw: "慣竊" },
+            { cn: "憋屈", tw: "敢怒不敢言" },
+            { cn: "懵逼", tw: "不明所以" },
+            { cn: "成服", tw: "成衣" },
+            { cn: "我丟", tw: "哇靠" },
+            { cn: "我司", tw: "本公司" },
+            { cn: "房齡", tw: "屋齡" },
+            { cn: "手刀", tw: "立刻" },
+            { cn: "手柄", tw: "搖桿" },
+            { cn: "手辦", tw: "模型" },
+            { cn: "手雷", tw: "手榴彈" },
+            { cn: "手電", tw: "手電筒" },
+            { cn: "扎啤", tw: "生啤酒" },
+            { cn: "打車", tw: "叫車" },
+            { cn: "打錢", tw: "轉帳" },
+            { cn: "托幼", tw: "托嬰" },
+            { cn: "扯淡", tw: "胡扯" },
+            { cn: "批文", tw: "許可證" },
+            { cn: "技校", tw: "職業學校" },
+            { cn: "抑鬱", tw: "憂鬱" },
+            { cn: "抖色", tw: "遞色" },
+            { cn: "抽風", tw: "故障" },
+            { cn: "拉滿", tw: "十足" },
+            { cn: "拉胯", tw: "糟糕" },
+            { cn: "拉黑", tw: "封鎖" },
+            { cn: "招聘", tw: "招募" },
+            { cn: "掉線", tw: "斷線" },
+            { cn: "掙錢", tw: "賺錢" },
+            { cn: "掛機", tw: "連線" },
+            { cn: "探店", tw: "踩點" },
+            { cn: "插眼", tw: "之後再看" },
+            { cn: "揭彩", tw: "剪綵" },
+            { cn: "搞事", tw: "惹事生非" },
+            { cn: "摩的", tw: "機車" },
+            { cn: "摳圖", tw: "去背" },
+            { cn: "撸鐵", tw: "健身" },
+            { cn: "撿漏", tw: "重新利用" },
+            { cn: "擴銷", tw: "促銷" },
+            { cn: "攝像", tw: "攝影" },
+            { cn: "支持", tw: "支援" },
+            { cn: "攻關", tw: "突破瓶頸" },
+            { cn: "教程", tw: "教學" },
+            { cn: "教齡", tw: "教學年資" },
+            { cn: "散件", tw: "零件" },
+            { cn: "散架", tw: "解體" },
+            { cn: "散粉", tw: "蜜粉" },
+            { cn: "文件", tw: "資料" },
+            { cn: "文本", tw: "文字" },
+            { cn: "文檔", tw: "說明文件" },
+            { cn: "新建", tw: "建立" },
+            { cn: "智能", tw: "智慧" },
+            { cn: "最頂", tw: "最好" },
+            { cn: "朋客", tw: "龐克族" },
+            { cn: "本科", tw: "大學" },
+            { cn: "杯具", tw: "倒楣" },
+            { cn: "查找", tw: "搜尋" },
+            { cn: "模塊", tw: "模組" },
+            { cn: "模板", tw: "樣板" },
+            { cn: "樣板", tw: "模範" },
+            { cn: "樣片", tw: "試片，試映片" },
+            { cn: "檔次", tw: "等級" },
+            { cn: "歇班", tw: "休假" },
+            { cn: "武術", tw: "國術" },
+            { cn: "死機", tw: "當機" },
+            { cn: "民樂", tw: "國樂" },
+            { cn: "水平", tw: "水準" },
+            { cn: "河蟹", tw: "審查" },
+            { cn: "油管", tw: "YouTube" },
+            { cn: "治癒", tw: "療癒" },
+            { cn: "浪頭", tw: "潮流，浪潮" },
+            { cn: "浴霸", tw: "浴室暖風機" },
+            { cn: "海量", tw: "大量" },
+            { cn: "消息", tw: "訊息" },
+            { cn: "渠道", tw: "管道" },
+            { cn: "港客", tw: "香港觀光客" },
+            { cn: "渲染", tw: "彩現" },
+            { cn: "湯加", tw: "東加" },
+            { cn: "滑坡", tw: "下滑" },
+            { cn: "演示", tw: "範例" },
+            { cn: "激光", tw: "雷射" },
+            { cn: "激活", tw: "打開" },
+            { cn: "炸魚", tw: "虐菜" },
+            { cn: "無語", tw: "無言" },
+            { cn: "熱貨", tw: "搶手貨" },
+            { cn: "熱銷", tw: "熱賣" },
+            { cn: "營銷", tw: "行銷" },
+            { cn: "爆冷", tw: "爆冷門" },
+            { cn: "爆棚", tw: "十足" },
+            { cn: "爆款", tw: "人氣" },
+            { cn: "爹味", tw: "很直男" },
+            { cn: "牛油", tw: "奶油" },
+            { cn: "牛逼", tw: "厲害" },
+            { cn: "特別", tw: "很" },
+            { cn: "狗子", tw: "狗" },
+            { cn: "狼性", tw: "野心" },
+            { cn: "現房", tw: "成屋" },
+            { cn: "瑙魯", tw: "諾魯" },
+            { cn: "甩賣", tw: "拋售" },
+            { cn: "當前", tw: "目前" },
+            { cn: "病休", tw: "請病假" },
+            { cn: "登錄", tw: "登入" },
+            { cn: "發貨", tw: "出貨" },
+            { cn: "白嫖", tw: "免費拿" },
+            { cn: "白班", tw: "日班" },
+            { cn: "白給", tw: "送頭" },
+            { cn: "盒飯", tw: "便當" },
+            { cn: "監控", tw: "監視器" },
+            { cn: "盲區", tw: "盲點" },
+            { cn: "直白", tw: "直接" },
+            { cn: "直觀", tw: "直覺" },
+            { cn: "相冊", tw: "相簿" },
+            { cn: "省心", tw: "不操心" },
+            { cn: "省流", tw: "懶人包" },
+            { cn: "真香", tw: "真棒" },
+            { cn: "矢量", tw: "向量" },
+            { cn: "短板", tw: "缺點" },
+            { cn: "破口", tw: "漏洞" },
+            { cn: "破防", tw: "崩潰" },
+            { cn: "硅膠", tw: "矽膠" },
+            { cn: "硬傷", tw: "致命傷" },
+            { cn: "硬控", tw: "暈船" },
+            { cn: "硬核", tw: "硬派" },
+            { cn: "硬盤", tw: "硬碟" },
+            { cn: "碰瓷", tw: "敲竹槓" },
+            { cn: "社牛", tw: "熱情" },
+            { cn: "科普", tw: "小知識" },
+            { cn: "科研", tw: "直接講領域" },
+            { cn: "程序", tw: "程式" },
+            { cn: "積分", tw: "點數" },
+            { cn: "積攢", tw: "累積" },
+            { cn: "空哥", tw: "空中少爺" },
+            { cn: "窗口", tw: "視窗" },
+            { cn: "立馬", tw: "馬上" },
+            { cn: "笑星", tw: "諧星" },
+            { cn: "管飽", tw: "份量大" },
+            { cn: "簡裝", tw: "平裝" },
+            { cn: "糟心", tw: "心煩" },
+            { cn: "糾心", tw: "心疼" },
+            { cn: "糾結", tw: "執著" },
+            { cn: "紋理", tw: "紋路" },
+            { cn: "級別", tw: "層級" },
+            { cn: "細狗", tw: "瘦皮猴" },
+            { cn: "組件", tw: "元件" },
+            { cn: "給力", tw: "厲害" },
+            { cn: "統考", tw: "聯考" },
+            { cn: "絲滑", tw: "滑順" },
+            { cn: "網上", tw: "網路上" },
+            { cn: "網吧", tw: "網咖" },
+            { cn: "網暴", tw: "網路霸凌" },
+            { cn: "網民", tw: "網友" },
+            { cn: "網關", tw: "閘道器" },
+            { cn: "線下", tw: "實體" },
+            { cn: "線程", tw: "執行緒" },
+            { cn: "編程", tw: "寫程式" },
+            { cn: "緩存", tw: "快取" },
+            { cn: "美刀", tw: "美金" },
+            { cn: "群發", tw: "大量轉傳" },
+            { cn: "老摳", tw: "吝嗇鬼" },
+            { cn: "老撾", tw: "寮國" },
+            { cn: "老鐵", tw: "哥們" },
+            { cn: "考研", tw: "考研究所" },
+            { cn: "聲霸", tw: "電視音響" },
+            { cn: "肉雞", tw: "飼料雞" },
+            { cn: "脫單", tw: "脫魯" },
+            { cn: "脫產", tw: "離職" },
+            { cn: "腦庫", tw: "智囊團" },
+            { cn: "自帶", tw: "附屬" },
+            { cn: "舉報", tw: "檢舉" },
+            { cn: "航班", tw: "班機" },
+            { cn: "色粉", tw: "碳粉" },
+            { cn: "艾特", tw: "@" },
+            { cn: "茶點", tw: "點心" },
+            { cn: "菜單", tw: "選單" },
+            { cn: "萌新", tw: "新手" },
+            { cn: "薌劇", tw: "歌仔戲" },
+            { cn: "藍屏", tw: "藍色畫面錯誤" },
+            { cn: "虧賊", tw: "瘋狂" },
+            { cn: "蛋疼", tw: "頭疼" },
+            { cn: "衛衣", tw: "帽T" },
+            { cn: "袖標", tw: "臂章" },
+            { cn: "補丁", tw: "更新檔" },
+            { cn: "視頻", tw: "影片" },
+            { cn: "設置", tw: "設定" },
+            { cn: "誤區", tw: "迷思" },
+            { cn: "說唱", tw: "饒舌" },
+            { cn: "調用", tw: "呼叫" },
+            { cn: "調試", tw: "除錯" },
+            { cn: "變量", tw: "變數" },
+            { cn: "貌似", tw: "似乎" },
+            { cn: "貓膩", tw: "內幕" },
+            { cn: "質量", tw: "品質" },
+            { cn: "贏麻", tw: "穩贏" },
+            { cn: "走心", tw: "在意" },
+            { cn: "走起", tw: "衝" },
+            { cn: "超編", tw: "超額" },
+            { cn: "超頂", tw: "超讚" },
+            { cn: "路條", tw: "通行證" },
+            { cn: "跳閘", tw: "跳電" },
+            { cn: "躺平", tw: "擺爛" },
+            { cn: "車照", tw: "行車執照" },
+            { cn: "車間", tw: "生產線" },
+            { cn: "軟件", tw: "軟體" },
+            { cn: "輕騎", tw: "輕型機車" },
+            { cn: "輸液", tw: "點滴" },
+            { cn: "返現", tw: "回饋" },
+            { cn: "迭代", tw: "疊代" },
+            { cn: "退款", tw: "退費" },
+            { cn: "逃生", tw: "逃學生" },
+            { cn: "通信", tw: "通訊" },
+            { cn: "通過", tw: "透過" },
+            { cn: "速遞", tw: "快遞" },
+            { cn: "進分", tw: "進帳" },
+            { cn: "進程", tw: "程序" },
+            { cn: "逼格", tw: "格調" },
+            { cn: "運行", tw: "執行" },
+            { cn: "過渡", tw: "轉場" },
+            { cn: "適配", tw: "符合" },
+            { cn: "那味", tw: "那種feel（fu）" },
+            { cn: "配演", tw: "配角" },
+            { cn: "酸奶", tw: "優格" },
+            { cn: "銳評", tw: "一針見血" },
+            { cn: "銷價", tw: "售價" },
+            { cn: "鏈結", tw: "連結" },
+            { cn: "鏈路", tw: "連結" },
+            { cn: "長臉", tw: "給面子" },
+            { cn: "門店", tw: "門市" },
+            { cn: "開盒", tw: "肉搜" },
+            { cn: "限流", tw: "降觸及" },
+            { cn: "集成", tw: "整合" },
+            { cn: "雙擊", tw: "輕按兩下" },
+            { cn: "雞肋", tw: "多餘" },
+            { cn: "難繃", tw: "難受" },
+            { cn: "雷管", tw: "管狀炸彈" },
+            { cn: "電機", tw: "馬達" },
+            { cn: "靠譜", tw: "可靠" },
+            { cn: "面市", tw: "上市" },
+            { cn: "面料", tw: "布料" },
+            { cn: "音頻", tw: "音訊" },
+            { cn: "頂價", tw: "天價" },
+            { cn: "頂班", tw: "代班" },
+            { cn: "項目", tw: "專案" },
+            { cn: "領導", tw: "主管" },
+            { cn: "領證", tw: "登記（結婚）" },
+            { cn: "頭像", tw: "頭貼" },
+            { cn: "頭盔", tw: "安全帽" },
+            { cn: "顏值", tw: "很帥" },
+            { cn: "顯存", tw: "顯示記憶體" },
+            { cn: "駕校", tw: "駕訓班" },
+            { cn: "高亮", tw: "發光" },
+            { cn: "高光", tw: "打亮" },
+            { cn: "高效", tw: "高效率" },
+            { cn: "高檔", tw: "高級，上等" },
+            { cn: "高玩", tw: "高手" },
+            { cn: "高端", tw: "高級" },
+            { cn: "魔怔", tw: "著魔" },
+            { cn: "魔芋", tw: "蒟蒻" },
+            { cn: "麻利", tw: "快" },
+            { cn: "黃油", tw: "奶油" },
+            { cn: "默認", tw: "預設" },
+            { cn: "點讚", tw: "按讚" },
+            { cn: "鼠標", tw: "游標" }
+        ];
+
+        // 分離簡體和繁體詞庫
+        const linguipediaVocabs = [];  // 簡體形式，opencc 之前
+        const taiwanChinaVocabs = [];  // 繁體形式，opencc 之後
+
+        // 根據註解分離詞庫
+        let isLinguipedia = false;
+        let isTaiwanChina = false;
+
+        taiwanVocabs.forEach((vocab, index) => {
+            // 檢測分隔註解
+            if (index < taiwanVocabs.length - 1) {
+                const nextComment = taiwanVocabs[index + 1];
+                // 這裡我們簡化處理：前半部分是 linguipedia，後半部分是 taiwan_china
+            }
+        });
+
+        // 簡化版：根據索引分離（前 1251 條是 linguipedia，後 762 條是 taiwan_china）
+        for (let i = 0; i < taiwanVocabs.length; i++) {
+            if (i < 1251) {
+                linguipediaVocabs.push(taiwanVocabs[i]);
+            } else {
+                taiwanChinaVocabs.push(taiwanVocabs[i]);
+            }
+        }
+
+        // 檢測文本中文字比例
+        function getChineseRatio(text) {
+            if (!text) return 0;
+            const chineseChars = text.match(/[\u4e00-\u9fa5]/g);
+            return chineseChars ? chineseChars.length / text.length : 0;
+        }
+
+        // 應用詞庫替換
+        function applyVocabReplacement(text, vocabs) {
+            let result = text;
+            vocabs.forEach(vocab => {
+                const regex = new RegExp(vocab.cn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                result = result.replace(regex, vocab.tw);
+            });
+            return result;
+        }
+
+        // 語言指令替換
+        function replaceLanguageDirectives(text) {
+            return text
+                .replace(/簡體中文/g, '繁體中文')
+                .replace(/简体中文/g, '繁體中文')
+                .replace(/zh-cn/gi, 'zh-tw')
+                .replace(/中國大陸/g, '台灣')
+                .replace(/中国大陆/g, '台灣');
+        }
+
+        // 轉換為台灣繁體中文
+        async function convertToTraditional() {
+            if (!currentPreset) {
+                showError('請先上傳預設詞檔案');
+                return;
+            }
+
+            if (!window.OpenCC) {
+                showError('OpenCC 載入失敗，請重新整理頁面');
+                return;
+            }
+
+            // 顯示處理中
+            const statusEl = document.getElementById('editModeStatus');
+            const originalText = statusEl.textContent;
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在轉換為台灣繁體...';
+            statusEl.style.color = 'var(--warning)';
+
+            try {
+                // 初始化 OpenCC（簡體轉台灣正體）
+                const converter = OpenCC.Converter({ from: 's', to: 'twp' });
+
+                // 轉換 prompts
+                if (currentPreset.prompts) {
+                    currentPreset.prompts.forEach(prompt => {
+                        // 轉換 name（四層轉換）
+                        if (prompt.name && getChineseRatio(prompt.name) >= 0.1) {
+                            let text = prompt.name;
+                            // 第一層：linguipedia 詞庫（簡體形式，opencc 之前）
+                            text = applyVocabReplacement(text, linguipediaVocabs);
+                            // 第二層：opencc s2twp（簡→繁）
+                            text = converter(text);
+                            // 第三層：taiwan_china 詞庫（繁體形式，opencc 之後）
+                            text = applyVocabReplacement(text, taiwanChinaVocabs);
+                            // 第四層：語言指令替換
+                            text = replaceLanguageDirectives(text);
+                            prompt.name = text;
+                            modifiedPrompts.add(prompt.identifier);
+                        }
+
+                        // 轉換 content（四層轉換）
+                        if (prompt.content && getChineseRatio(prompt.content) >= 0.1) {
+                            let text = prompt.content;
+                            // 第一層：linguipedia 詞庫（簡體形式，opencc 之前）
+                            text = applyVocabReplacement(text, linguipediaVocabs);
+                            // 第二層：opencc s2twp（簡→繁）
+                            text = converter(text);
+                            // 第三層：taiwan_china 詞庫（繁體形式，opencc 之後）
+                            text = applyVocabReplacement(text, taiwanChinaVocabs);
+                            // 第四層：語言指令替換
+                            text = replaceLanguageDirectives(text);
+                            prompt.content = text;
+                            modifiedPrompts.add(prompt.identifier);
+                        }
+                    });
+                }
+
+                // 轉換 preset name（四層轉換）
+                if (currentPreset.name && getChineseRatio(currentPreset.name) >= 0.1) {
+                    let text = currentPreset.name;
+                    // 第一層：linguipedia 詞庫（簡體形式，opencc 之前）
+                    text = applyVocabReplacement(text, linguipediaVocabs);
+                    // 第二層：opencc s2twp（簡→繁）
+                    text = converter(text);
+                    // 第三層：taiwan_china 詞庫（繁體形式，opencc 之後）
+                    text = applyVocabReplacement(text, taiwanChinaVocabs);
+                    // 第四層：語言指令替換
+                    text = replaceLanguageDirectives(text);
+                    currentPreset.name = text;
+                }
+
+                // 在原檔名加上 _TW
+                if (originalFileName && !originalFileName.includes('_TW')) {
+                    originalFileName = originalFileName + '_TW';
+                }
+
+                // 重新渲染
+                renderPreset(currentPreset);
+
+                // 顯示成功訊息
+                statusEl.innerHTML = '<i class="fa-solid fa-check"></i> 轉換完成！已套用台灣繁體用語';
+                statusEl.style.color = 'var(--success)';
+                setTimeout(() => {
+                    statusEl.textContent = originalText;
+                    statusEl.style.color = '';
+                }, 3000);
+
+            } catch (error) {
+                console.error('轉換失敗:', error);
+                showError('轉換失敗: ' + error.message);
+                statusEl.textContent = originalText;
+                statusEl.style.color = '';
             }
         }
     </script>
