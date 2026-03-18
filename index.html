@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SillyTavern 預設詞預覽器v1.3</title>
+    <title>SillyTavern 預設詞預覽器</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="lib/opencc-full.js"></script>
     <script>
@@ -822,7 +822,7 @@
 <body>
     <div class="container">
         <header>
-            <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 預設詞預覽器v1.3</h1>
+            <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 預設詞預覽器</h1>
             <p class="subtitle">上傳 Preset JSON 檔案，模擬酒館界面預覽 Prompts</p>
             <div class="instruction-box">
                 <h3><i class="fa-regular fa-lightbulb"></i> 簡易說明</h3>
@@ -3647,6 +3647,42 @@
                     // 第四層：語言指令替換
                     text = replaceLanguageDirectives(text);
                     currentPreset.name = text;
+                }
+
+                // 轉換 regex_scripts（四層轉換）
+                if (currentPreset.extensions?.regex_scripts && Array.isArray(currentPreset.extensions.regex_scripts)) {
+                    currentPreset.extensions.regex_scripts.forEach(script => {
+                        // 轉換腳本名稱
+                        if (script.scriptName && getChineseRatio(script.scriptName) >= 0.1) {
+                            let text = script.scriptName;
+                            text = applyVocabReplacement(text, linguipediaVocabs);
+                            text = converter(text);
+                            text = applyVocabReplacement(text, taiwanChinaVocabs);
+                            text = replaceLanguageDirectives(text);
+                            script.scriptName = text;
+                        }
+
+                        // 轉換替換文本
+                        if (script.replaceString && getChineseRatio(script.replaceString) >= 0.1) {
+                            let text = script.replaceString;
+                            text = applyVocabReplacement(text, linguipediaVocabs);
+                            text = converter(text);
+                            text = applyVocabReplacement(text, taiwanChinaVocabs);
+                            text = replaceLanguageDirectives(text);
+                            script.replaceString = text;
+                        }
+
+                        // 轉換正則表達式中的中文（謹慎處理）
+                        if (script.findRegex && getChineseRatio(script.findRegex) >= 0.1) {
+                            let text = script.findRegex;
+                            text = applyVocabReplacement(text, linguipediaVocabs);
+                            text = converter(text);
+                            text = applyVocabReplacement(text, taiwanChinaVocabs);
+                            text = replaceLanguageDirectives(text);
+                            script.findRegex = text;
+                        }
+                    });
+                    console.log('已轉換 regex_scripts:', currentPreset.extensions.regex_scripts.length, '個腳本');
                 }
 
                 // 在原檔名加上 _TW
