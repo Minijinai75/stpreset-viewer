@@ -5,7 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SillyTavern 預設詞預覽器</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+    <script src="lib/opencc-full.js"></script>
+    <script>
+        // 預先初始化 OpenCC 轉換器
+        let openccConverter = null;
+
+        // 頁面載入後初始化
+        window.addEventListener('load', function() {
+            try {
+                if (window.OpenCC) {
+                    // OpenCC-js 1.0.5 正確的 API
+                    openccConverter = OpenCC.Converter({ from: 'cn', to: 'twp' });
+                    console.log('OpenCC 初始化成功');
+                }
+            } catch(e) {
+                console.warn('OpenCC 初始化失敗，使用備用方案:', e.message);
+                // 備用方案：不做字形轉換，只靠詞庫
+                openccConverter = function(text) { return text; };
+            }
+        });
+    </script>
     <style>
         * {
             margin: 0;
@@ -3537,6 +3556,22 @@
                 return;
             }
 
+            // 檢查預初始化的轉換器
+            if (!openccConverter) {
+                try {
+                    openccConverter = OpenCC.CustomConverter([
+                        ['s', 'tw'],
+                        ['tw', 'twp']
+                    ]);
+                    console.log('OpenCC 延遲初始化成功');
+                } catch(e) {
+                    console.error('OpenCC 初始化失敗:', e);
+                    // 使用備用方案：只使用詞庫轉換，不使用 OpenCC
+                    openccConverter = function(text) { return text; };
+                    console.log('使用備用方案（無 OpenCC 字形轉換）');
+                }
+            }
+
             // 顯示處理中
             const statusEl = document.getElementById('editModeStatus');
             const originalText = statusEl.textContent;
@@ -3551,8 +3586,17 @@
                     taiwanChinaVocabs: taiwanChinaVocabs?.length || 0
                 });
 
-                // 初始化 OpenCC（簡體轉台灣正體）
-                const converter = OpenCC.Converter({ from: 's', to: 'twp' });
+                // 驗證 currentPreset 結構
+                console.log('currentPreset 結構:', {
+                    name: currentPreset?.name,
+                    hasPrompts: !!currentPreset?.prompts,
+                    promptsType: typeof currentPreset?.prompts,
+                    isArray: Array.isArray(currentPreset?.prompts),
+                    promptsLength: currentPreset?.prompts?.length
+                });
+
+                // 使用預先初始化的 OpenCC 轉換器
+                const converter = openccConverter;
 
                 // 轉換 prompts
                 if (currentPreset.prompts && Array.isArray(currentPreset.prompts)) {
