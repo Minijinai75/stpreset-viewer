@@ -3720,7 +3720,15 @@
                     console.log('已轉換 continue_nudge_prompt');
                 }
 
-                // 在原檔名加上 _TW
+                // 檔名也簡轉繁（四層轉換），再加上 _TW
+                if (originalFileName && hasChinese(originalFileName)) {
+                    let text = originalFileName;
+                    text = applyVocabReplacement(text, linguipediaVocabs);
+                    text = converter(text);
+                    text = applyVocabReplacement(text, taiwanChinaVocabs);
+                    text = replaceLanguageDirectives(text);
+                    originalFileName = text;
+                }
                 if (originalFileName && !originalFileName.includes('_TW')) {
                     originalFileName = originalFileName + '_TW';
                 }
