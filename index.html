@@ -1082,9 +1082,17 @@
             `;
         }
 
+        // 找出 prompt_order 中 order 數量最多的條目（相容多 character_id 的 preset）
+        function getBestOrder(preset) {
+            if (!preset.prompt_order || preset.prompt_order.length === 0) return null;
+            return preset.prompt_order.reduce((best, cur) =>
+                (cur.order?.length || 0) > (best.order?.length || 0) ? cur : best
+            );
+        }
+
         function getEnabledPromptsCount(preset) {
             if (!preset.prompt_order || preset.prompt_order.length === 0) return preset.prompts.length;
-            const order = preset.prompt_order[0]?.order || [];
+            const order = getBestOrder(preset)?.order || [];
             return order.filter(o => o.enabled).length;
         }
 
@@ -1117,16 +1125,19 @@
         function getOrderedPrompts(preset) {
             if (!preset.prompt_order || preset.prompt_order.length === 0) {
                 // 沒有 prompt_order，直接使用 prompts 陣列
-                return preset.prompts.map(p => ({ ...p, enabled: true }));
+                return preset.prompts.map(p => ({ ...p, enabled: p.enabled !== false }));
             }
 
-            const order = preset.prompt_order[0]?.order || [];
+            const best = getBestOrder(preset);
+            const order = best?.order || [];
             const promptMap = new Map(preset.prompts.map(p => [p.identifier, p]));
 
             return order.map(o => {
                 const prompt = promptMap.get(o.identifier);
                 if (!prompt) return null;
-                return { ...prompt, enabled: o.enabled };
+                // o.enabled 來自 order；若 prompt 本身沒有 enabled 欄位（如 marker），以 order 的值為準
+                const enabled = o.enabled !== undefined ? o.enabled : (prompt.enabled !== false);
+                return { ...prompt, enabled };
             }).filter(p => p !== null);
         }
 
@@ -1414,8 +1425,9 @@
                 }];
             }
 
-            // 找到對應的 prompt order entry
-            const orderList = currentPreset.prompt_order[0].order;
+            // 找到 order 最多的 prompt_order 條目並切換狀態
+            const best = getBestOrder(currentPreset);
+            const orderList = best ? best.order : currentPreset.prompt_order[0].order;
             const orderEntry = orderList.find(o => o.identifier === identifier);
 
             if (orderEntry) {
