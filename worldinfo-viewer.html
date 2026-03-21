@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SillyTavern 世界書預覽器</title>
+    <meta name="description" content="上傳 World Info JSON 檔案，預覽、編輯、簡繁轉換、匯出世界書">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="lib/opencc-full.js"></script>
+    <script>
+        // 預初始化 OpenCC 轉換器
+        let openccConverter = null;
+        try {
+            if (window.OpenCC) {
+                openccConverter = OpenCC.Converter({ from: 'cn', to: 'twp' });
+                console.log('OpenCC 初始化成功');
+            }
+        } catch(e) {
+            console.warn('OpenCC 初始化失敗，使用備用方案:', e.message);
+            openccConverter = function(text) { return text; };
+        }
+    </script>
+    <script src="lib/taiwan-vocabs.js"></script>
+    <style>
+        :root {
+            --bg-primary: #F4F3EE;
+            --bg-secondary: #E8E6DF;
+            --bg-card: #FFFFFF;
+            --text-primary: #463F3A;
+            --text-secondary: #8A817C;
+            --text-muted: #BCB8B1;
+            --accent: #85BFD2;
+            --accent-dark: #5A9BB5;
+            --accent-light: #A8D5E5;
+            --border: #D5D0C7;
+            --success: #67c23a;
+            --warning: #E09F3E;
+            --danger: #E76F51;
+            --info: #6A89CC;
+            --constant-color: #9B59B6;
+            --disabled-color: #95A5A6;
+            --selective-color: #E67E22;
+            --position-before: #3498DB;
+            --position-after: #2ECC71;
+            --position-depth: #E74C3C;
+            --position-author: #9B59B6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        header h1 i { color: var(--accent); margin-right: 0.5rem; }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .instruction-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .instruction-box h3 {
+            color: var(--accent-dark);
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .instruction-box ul {
+            padding-left: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .instruction-box li { margin-bottom: 0.35rem; }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--bg-card);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .upload-section.drag-over {
+            border-color: var(--accent);
+            background: rgba(133, 191, 210, 0.08);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .upload-section h2 {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        #fileInput { display: none; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
+        .btn-secondary { background: var(--text-muted); }
+        .btn-secondary:hover { background: var(--text-secondary); }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #5dab34; }
+        .btn-warning { background: var(--warning); }
+        .btn-warning:hover { background: #c98a35; }
+        .btn-info { background: var(--info); }
+        .btn-info:hover { background: #5577aa; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #c55a40; }
+
+        /* Error */
+        .error-message {
+            background: #FFF0F0;
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--danger);
+            margin-bottom: 1rem;
+        }
+
+        /* Preview Container */
+        .preview-container { display: none; }
+
+        /* Preset Header */
+        .preset-header {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .preset-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .preset-type {
+            background: var(--accent);
+            color: #fff;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Edit mode bar */
+        .edit-mode-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .edit-mode-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .edit-mode-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Stats */
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: block;
+            margin: 0.3rem 0;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* Entry Manager */
+        .entry-manager {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .entry-manager-header {
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(133, 191, 210, 0.05);
+        }
+
+        .entry-manager-title {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .entry-manager-total {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .entry-list { list-style: none; }
+
+        .entry-list-header {
+            display: grid;
+            grid-template-columns: 24px 1fr 60px 60px 70px;
+            padding: 0.5rem 1rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        /* Entry Item */
+        .entry-item {
+            display: grid;
+            grid-template-columns: 24px 1fr 60px 60px 70px;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--bg-secondary);
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .entry-item:hover { background: rgba(133, 191, 210, 0.06); }
+
+        .entry-item.disabled {
+            opacity: 0.45;
+        }
+
+        .entry-item.expanded {
+            background: rgba(133, 191, 210, 0.04);
+        }
+
+        .entry-status-icon {
+            font-size: 0.65rem;
+        }
+
+        .entry-status-icon.constant { color: var(--constant-color); }
+        .entry-status-icon.selective { color: var(--selective-color); }
+        .entry-status-icon.normal { color: var(--accent); }
+        .entry-status-icon.disabled-icon { color: var(--disabled-color); }
+
+        .entry-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow: hidden;
+        }
+
+        .entry-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .entry-keys {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .entry-key-tag {
+            background: rgba(133, 191, 210, 0.15);
+            color: var(--accent-dark);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-family: 'Fira Code', monospace;
+            white-space: nowrap;
+        }
+
+        .entry-order {
+            text-align: center;
+            font-size: 0.8rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--text-secondary);
+        }
+
+        .entry-position {
+            text-align: center;
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+
+        .entry-position .pos-badge {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 0.6rem;
+        }
+
+        .pos-before { background: var(--position-before); }
+        .pos-after { background: var(--position-after); }
+        .pos-depth { background: var(--position-depth); }
+        .pos-author { background: var(--position-author); }
+
+        .entry-tokens {
+            text-align: right;
+            font-size: 0.8rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--text-secondary);
+        }
+
+        .entry-toggle {
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--success);
+            transition: color 0.2s;
+        }
+
+        .entry-toggle.off { color: var(--disabled-color); }
+        .entry-toggle:hover { opacity: 0.7; }
+
+        /* Entry Content (Expanded) */
+        .entry-content {
+            display: none;
+            grid-column: 1 / -1;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            font-size: 0.82rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: var(--text-primary);
+        }
+
+        .entry-item.expanded .entry-content { display: block; }
+
+        .entry-content-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+        }
+
+        .entry-content-meta .label {
+            color: var(--text-muted);
+            margin-right: 0.25rem;
+        }
+
+        .entry-content-meta .value {
+            color: var(--accent-dark);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .entry-detail-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .entry-detail {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .entry-detail .detail-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .entry-detail .detail-value {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .entry-content-text {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            white-space: pre-wrap;
+            font-size: 0.82rem;
+            line-height: 1.7;
+        }
+
+        .entry-content-editor {
+            width: 100%;
+            min-height: 150px;
+            background: #ffffff;
+            color: var(--text-primary);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .entry-content-editor:focus {
+            outline: none;
+            border-color: var(--accent-dark);
+            box-shadow: 0 0 0 2px rgba(133, 191, 210, 0.2);
+        }
+
+        .field-edit-input {
+            width: 100%;
+            background: #fff;
+            color: var(--text-primary);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 0.35rem 0.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .field-edit-input:focus {
+            outline: none;
+            border-color: var(--accent-dark);
+        }
+
+        .entry-item.modified .entry-name::after {
+            content: ' ●';
+            color: var(--success);
+            margin-left: 0.25rem;
+        }
+
+        /* Sections */
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .section-title:hover { background: rgba(133, 191, 210, 0.05); }
+        .section-title h3 { font-size: 0.95rem; }
+        .section-title h3 i { color: var(--accent); margin-right: 0.5rem; }
+
+        .section-toggle {
+            transition: transform 0.2s;
+            color: var(--text-muted);
+        }
+
+        .section.collapsed .section-content { display: none; }
+        .section.collapsed .section-toggle { transform: rotate(-90deg); }
+
+        .section-content { padding: 0 1.25rem 1rem; }
+
+        .json-explorer {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .json-explorer pre {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        footer a { color: var(--accent-dark); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .entry-item { grid-template-columns: 24px 1fr 50px 50px; }
+            .entry-tokens { display: none; }
+            .stats-bar { flex-direction: column; }
+            .edit-mode-bar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-globe"></i> SillyTavern 世界書預覽器</h1>
+            <p class="subtitle">上傳 World Info JSON 檔案，預覽、編輯、簡繁轉換再匯出</p>
+            <div class="instruction-box">
+                <h3><i class="fa-regular fa-lightbulb"></i> 簡易說明</h3>
+                <ul>
+                    <li>點擊 <strong>選擇檔案</strong> 或拖放 JSON 世界書檔案至此處。</li>
+                    <li>系統會自動解析並按 Order 排序，讓您預覽所有 Entry 的內容與設定。</li>
+                    <li>可使用 <strong>簡→繁轉換</strong> 將簡體中文內容轉為台灣繁體用語後再 <strong>匯出</strong>。</li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="upload-section" id="uploadSection">
+            <i class="fa-solid fa-file-import upload-icon"></i>
+            <h2>拖放 JSON 檔案到這裡</h2>
+            <p style="color: var(--text-secondary); margin: 1rem 0;">或</p>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">
+                <i class="fa-solid fa-folder-open"></i> 選擇檔案
+            </button>
+            <input type="file" id="fileInput" accept=".json" onchange="handleFileSelect(event)">
+        </div>
+
+        <div id="errorContainer"></div>
+        <div id="previewContainer" class="preview-container"></div>
+    </div>
+
+    <footer>
+        <div>
+            <i class="fa-solid fa-code"></i> Made with <i class="fa-solid fa-heart" style="color: #f56c6c;"></i> by <strong>Minijinai75</strong>
+        </div>
+        <div style="margin-top: 0.5rem;">
+            © 2026 SillyTavern 世界書預覽器 | <a href="https://github.com/SillyTavern/SillyTavern" target="_blank">SillyTavern</a>
+        </div>
+    </footer>
+
+    <script>
+        let currentWorldInfo = null;
+        let originalFileName = '';
+        let editMode = false;
+        let modifiedEntries = new Set();
+
+        // 拖放處理
+        const uploadSection = document.getElementById('uploadSection');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('drag-over');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('drag-over');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) handleFile(file);
+        }
+
+        function handleFile(file) {
+            originalFileName = file.name.replace(/\.json$/i, '');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (!json.entries) {
+                        showError('此 JSON 不含 entries 欄位，不是有效的世界書格式。');
+                        return;
+                    }
+                    currentWorldInfo = json;
+                    editMode = false;
+                    modifiedEntries.clear();
+                    renderWorldInfo(json);
+                    clearError();
+                } catch (error) {
+                    showError('JSON 格式錯誤: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // === 渲染 ===
+
+        function renderWorldInfo(wi) {
+            const container = document.getElementById('previewContainer');
+            const entries = getSortedEntries(wi);
+
+            let html = `
+                <div class="preset-header">
+                    <span class="preset-name">${escapeHtml(originalFileName || '世界書')}</span>
+                    <span class="preset-type">World Info · ${entries.length} Entries</span>
+                </div>
+
+                <div class="edit-mode-bar">
+                    <div class="edit-mode-info">
+                        <i class="fa-solid fa-info-circle"></i>
+                        <span id="editModeStatus">${editMode ? '編輯模式：可修改 Comment、Content、Key 等' : '點擊「編輯模式」開始修改世界書條目'}</span>
+                    </div>
+                    <div class="edit-mode-actions">
+                        <button class="btn btn-info" onclick="convertToTraditional()" title="轉換為台灣繁體中文">
+                            <i class="fa-solid fa-language"></i> 簡→繁轉換
+                        </button>
+                        <button class="btn ${editMode ? 'btn-secondary' : 'btn-warning'}" onclick="toggleEditMode()">
+                            <i class="fa-solid ${editMode ? 'fa-eye' : 'fa-pen'}"></i>
+                            ${editMode ? '結束編輯' : '編輯模式'}
+                        </button>
+                        <button class="btn btn-success" onclick="exportWorldInfo()">
+                            <i class="fa-solid fa-download"></i> 匯出
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Stats
+            html += renderStats(entries);
+
+            // Entries
+            html += renderEntryManager(entries);
+
+            // Raw JSON
+            html += renderSection('Raw JSON', `
+                <div class="json-explorer">
+                    <pre>${escapeHtml(JSON.stringify(wi, null, 2))}</pre>
+                </div>
+            `, 'fa-code', true);
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+            initializeInteractions();
+        }
+
+        function getSortedEntries(wi) {
+            if (!wi.entries) return [];
+            return Object.entries(wi.entries)
+                .map(([key, entry]) => ({ ...entry, _key: key }))
+                .sort((a, b) => (b.order || 0) - (a.order || 0));
+        }
+
+        function renderStats(entries) {
+            const enabled = entries.filter(e => !e.disable).length;
+            const constants = entries.filter(e => e.constant).length;
+            const totalTokens = entries.reduce((sum, e) => {
+                if (e.disable) return sum;
+                return sum + estimateTokens(e.content || '');
+            }, 0);
+
+            // Position 分佈
+            const positions = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+            entries.filter(e => !e.disable).forEach(e => {
+                const pos = e.position || 0;
+                if (positions[pos] !== undefined) positions[pos]++;
+            });
+
+            const stats = [
+                { icon: 'fa-list', label: 'Entries', value: `${enabled}/${entries.length}` },
+                { icon: 'fa-lock', label: 'Constant', value: constants },
+                { icon: 'fa-coins', label: 'Est. Tokens', value: totalTokens.toLocaleString() },
+            ];
+
+            return `
+                <div class="stats-bar">
+                    ${stats.map(s => `
+                        <div class="stat-item">
+                            <i class="fa-solid ${s.icon}" style="color: var(--accent);"></i>
+                            <span class="stat-value">${s.value}</span>
+                            <span class="stat-label">${s.label}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderEntryManager(entries) {
+            const totalTokens = entries.reduce((sum, e) => {
+                if (e.disable) return sum;
+                return sum + estimateTokens(e.content || '');
+            }, 0);
+
+            return `
+                <div class="entry-manager">
+                    <div class="entry-manager-header">
+                        <span class="entry-manager-title">
+                            <i class="fa-solid fa-book-open"></i> World Info Entries
+                        </span>
+                        <span class="entry-manager-total">
+                            Total Tokens: ~${totalTokens.toLocaleString()}
+                        </span>
+                    </div>
+                    <ul class="entry-list">
+                        <li class="entry-list-header">
+                            <span></span>
+                            <span>Comment / Keys</span>
+                            <span>Order</span>
+                            <span>Position</span>
+                            <span>Tokens</span>
+                        </li>
+                        ${entries.map((e, idx) => renderEntryItem(e, idx)).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        function getPositionLabel(pos) {
+            const labels = {
+                0: { text: '↑Before', cls: 'pos-before' },
+                1: { text: '↓After', cls: 'pos-after' },
+                2: { text: '@Before AN', cls: 'pos-before' },
+                3: { text: '@After AN', cls: 'pos-after' },
+                4: { text: '⊕D Depth', cls: 'pos-depth' },
+            };
+            return labels[pos] || { text: `P${pos}`, cls: 'pos-before' };
+        }
+
+        function getEntryTypeIcon(entry) {
+            if (entry.disable) return { icon: 'fa-ban', cls: 'disabled-icon', title: '已停用' };
+            if (entry.constant) return { icon: 'fa-lock', cls: 'constant', title: '常駐 (Constant)' };
+            if (entry.selective) return { icon: 'fa-filter', cls: 'selective', title: '選擇性 (Selective)' };
+            return { icon: 'fa-circle', cls: 'normal', title: '一般' };
+        }
+
+        function renderEntryItem(entry, index) {
+            const typeIcon = getEntryTypeIcon(entry);
+            const posInfo = getPositionLabel(entry.position || 0);
+            const tokens = estimateTokens(entry.content || '');
+            const disabledClass = entry.disable ? 'disabled' : '';
+            const keys = (entry.key || []).concat(entry.keysecondary || []).filter(k => k);
+
+            const depthInfo = entry.depth !== undefined && entry.depth !== null
+                ? `<span style="font-size:0.6rem; color:var(--text-muted);"> @${entry.depth}</span>` : '';
+
+            const keysHtml = keys.length > 0
+                ? `<span class="entry-keys">${keys.slice(0, 3).map(k => `<span class="entry-key-tag">${escapeHtml(k)}</span>`).join('')}${keys.length > 3 ? `<span class="entry-key-tag">+${keys.length - 3}</span>` : ''}</span>`
+                : '';
+
+            // Expanded content
+            const contentHtml = renderEntryContent(entry);
+
+            return `
+                <li class="entry-item ${disabledClass} ${modifiedEntries.has(entry._key) ? 'modified' : ''}" data-key="${entry._key}" data-index="${index}">
+                    <span class="entry-status-icon ${typeIcon.cls}" title="${typeIcon.title}">
+                        <i class="fa-solid ${typeIcon.icon}"></i>
+                    </span>
+                    <span class="entry-name-cell">
+                        <span class="entry-name">${escapeHtml(entry.comment || `Entry #${entry.uid}`)}</span>
+                        ${keysHtml}
+                    </span>
+                    <span class="entry-order">${entry.order ?? '-'}</span>
+                    <span class="entry-position">
+                        <span class="pos-badge ${posInfo.cls}">${posInfo.text}</span>
+                        ${depthInfo}
+                    </span>
+                    <span class="entry-tokens">${tokens}</span>
+                    <div class="entry-content">
+                        ${contentHtml}
+                    </div>
+                </li>
+            `;
+        }
+
+        function renderEntryContent(entry) {
+            const details = [
+                { label: 'UID', value: entry.uid },
+                { label: 'Order', value: entry.order },
+                { label: 'Position', value: getPositionLabel(entry.position || 0).text },
+                { label: 'Depth', value: entry.depth },
+                { label: 'Constant', value: entry.constant ? '✅ Yes' : '❌ No' },
+                { label: 'Selective', value: entry.selective ? '✅ Yes' : '❌ No' },
+                { label: 'Disable', value: entry.disable ? '🚫 Yes' : '✅ No' },
+                { label: 'Probability', value: entry.probability !== undefined ? `${entry.probability}%` : '100%' },
+                { label: 'Group', value: entry.group || '(none)' },
+                { label: 'Sticky', value: entry.sticky || 0 },
+                { label: 'Cooldown', value: entry.cooldown || 0 },
+                { label: 'Delay', value: entry.delay || 0 },
+            ];
+
+            const keys = entry.key || [];
+            const keysSecondary = entry.keysecondary || [];
+
+            if (editMode) {
+                return `
+                    <div class="entry-content-meta">
+                        <span><span class="label">UID:</span> <span class="value">${entry.uid}</span></span>
+                        <span><span class="label">Key:</span> <span class="value">${escapeHtml(keys.join(', ') || '(none)')}</span></span>
+                        <span><span class="label">Secondary:</span> <span class="value">${escapeHtml(keysSecondary.join(', ') || '(none)')}</span></span>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">Comment:</label>
+                        <input class="field-edit-input" value="${escapeHtml(entry.comment || '')}" onchange="handleEntryEdit('${entry._key}', 'comment', this.value)" onclick="event.stopPropagation()">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">Key (逗號分隔):</label>
+                        <input class="field-edit-input" value="${escapeHtml(keys.join(', '))}" onchange="handleEntryEdit('${entry._key}', 'key', this.value)" onclick="event.stopPropagation()">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">Secondary Key (逗號分隔):</label>
+                        <input class="field-edit-input" value="${escapeHtml(keysSecondary.join(', '))}" onchange="handleEntryEdit('${entry._key}', 'keysecondary', this.value)" onclick="event.stopPropagation()">
+                    </div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted);">Content:</label>
+                    <textarea class="entry-content-editor" data-key="${entry._key}" onchange="handleEntryEdit('${entry._key}', 'content', this.value)" onclick="event.stopPropagation()">${escapeHtml(entry.content || '')}</textarea>
+                `;
+            }
+
+            return `
+                <div class="entry-detail-grid">
+                    ${details.map(d => `
+                        <div class="entry-detail">
+                            <div class="detail-label">${d.label}</div>
+                            <div class="detail-value">${escapeHtml(String(d.value ?? '-'))}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="entry-content-meta">
+                    <span><span class="label">Key:</span> <span class="value">${escapeHtml(keys.join(', ') || '(none)')}</span></span>
+                    <span><span class="label">Secondary:</span> <span class="value">${escapeHtml(keysSecondary.join(', ') || '(none)')}</span></span>
+                </div>
+                <div class="entry-content-text">${escapeHtml(entry.content || '(空)')}</div>
+            `;
+        }
+
+        // === 工具函數 ===
+
+        function estimateTokens(text) {
+            if (!text) return 0;
+            return Math.ceil(text.length / 4);
+        }
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
+        function renderSection(title, content, icon = 'fa-cube', collapsed = false) {
+            return `
+                <div class="section ${collapsed ? 'collapsed' : ''}">
+                    <div class="section-title">
+                        <h3><i class="fa-solid ${icon}"></i> ${escapeHtml(title)}</h3>
+                        <i class="fa-solid fa-chevron-down section-toggle"></i>
+                    </div>
+                    <div class="section-content">
+                        ${content || '<div class="empty-state">無資料</div>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function initializeInteractions() {
+            // Section toggle
+            document.querySelectorAll('.section-title').forEach(title => {
+                title.addEventListener('click', () => {
+                    title.closest('.section').classList.toggle('collapsed');
+                });
+            });
+
+            // Entry expand
+            document.querySelectorAll('.entry-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.closest('.entry-content-editor')) return;
+                    if (e.target.closest('.field-edit-input')) return;
+                    if (e.target.closest('.entry-toggle')) return;
+                    item.classList.toggle('expanded');
+                });
+            });
+
+            // 阻止 editor 事件冒泡
+            document.querySelectorAll('.entry-content-editor, .field-edit-input').forEach(el => {
+                el.addEventListener('click', (e) => e.stopPropagation());
+            });
+        }
+
+        // === 編輯功能 ===
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            renderWorldInfo(currentWorldInfo);
+        }
+
+        function handleEntryEdit(key, field, value) {
+            if (!currentWorldInfo || !currentWorldInfo.entries[key]) return;
+
+            const entry = currentWorldInfo.entries[key];
+            if (field === 'key' || field === 'keysecondary') {
+                entry[field] = value.split(',').map(s => s.trim()).filter(s => s);
+            } else {
+                entry[field] = value;
+            }
+            modifiedEntries.add(key);
+        }
+
+        // === 匯出 ===
+
+        function exportWorldInfo() {
+            if (!currentWorldInfo) {
+                showError('沒有可匯出的世界書');
+                return;
+            }
+
+            const date = new Date();
+            const yy = String(date.getFullYear()).slice(-2);
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${yy}${mm}${dd}`;
+
+            const fileName = `${originalFileName || 'worldinfo'}_${dateStr}.json`;
+
+            const dataStr = JSON.stringify(currentWorldInfo, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            const statusEl = document.getElementById('editModeStatus');
+            if (statusEl) {
+                const originalText = statusEl.textContent;
+                statusEl.innerHTML = `<i class="fa-solid fa-check"></i> 已匯出: ${fileName}`;
+                statusEl.style.color = 'var(--success)';
+                setTimeout(() => {
+                    statusEl.textContent = originalText;
+                    statusEl.style.color = '';
+                }, 3000);
+            }
+        }
+
+        // === 簡繁轉換 ===
+
+        function hasChinese(text) {
+            if (!text) return false;
+            return /[\u4e00-\u9fa5]/.test(text);
+        }
+
+        function applyVocabReplacement(text, vocabs) {
+            if (!vocabs || !Array.isArray(vocabs) || vocabs.length === 0) return text;
+            let result = text;
+            vocabs.forEach(vocab => {
+                if (vocab && vocab.cn && vocab.tw) {
+                    const regex = new RegExp(vocab.cn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                    result = result.replace(regex, vocab.tw);
+                }
+            });
+            return result;
+        }
+
+        function replaceLanguageDirectives(text) {
+            return text
+                .replace(/簡體中文/g, '繁體中文')
+                .replace(/简体中文/g, '繁體中文')
+                .replace(/zh-cn/gi, 'zh-tw')
+                .replace(/中國大陸/g, '台灣')
+                .replace(/中国大陆/g, '台灣');
+        }
+
+        function convertText(text) {
+            if (!text || !hasChinese(text)) return text;
+            let result = text;
+            // 第一層：linguipedia 詞庫（簡體形式，opencc 之前）
+            if (typeof linguipediaVocabs !== 'undefined') {
+                result = applyVocabReplacement(result, linguipediaVocabs);
+            }
+            // 第二層：opencc s2twp（簡→繁）
+            if (openccConverter) {
+                result = openccConverter(result);
+            }
+            // 第三層：taiwan_china 詞庫（繁體形式，opencc 之後）
+            if (typeof taiwanChinaVocabs !== 'undefined') {
+                result = applyVocabReplacement(result, taiwanChinaVocabs);
+            }
+            // 第四層：語言指令替換
+            result = replaceLanguageDirectives(result);
+            return result;
+        }
+
+        async function convertToTraditional() {
+            if (!currentWorldInfo) {
+                showError('請先上傳世界書檔案');
+                return;
+            }
+
+            if (!window.OpenCC) {
+                showError('OpenCC 載入失敗，請重新整理頁面');
+                return;
+            }
+
+            if (!openccConverter) {
+                try {
+                    openccConverter = OpenCC.CustomConverter([['s', 'tw'], ['tw', 'twp']]);
+                    console.log('OpenCC 延遲初始化成功');
+                } catch(e) {
+                    console.error('OpenCC 初始化失敗:', e);
+                    openccConverter = function(text) { return text; };
+                }
+            }
+
+            const statusEl = document.getElementById('editModeStatus');
+            const originalText = statusEl.textContent;
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在轉換為台灣繁體...';
+            statusEl.style.color = 'var(--warning)';
+
+            try {
+                let convertedCount = 0;
+
+                for (const [key, entry] of Object.entries(currentWorldInfo.entries)) {
+                    // 轉換 comment
+                    if (entry.comment && hasChinese(entry.comment)) {
+                        entry.comment = convertText(entry.comment);
+                        modifiedEntries.add(key);
+                        convertedCount++;
+                    }
+
+                    // 轉換 content
+                    if (entry.content && hasChinese(entry.content)) {
+                        entry.content = convertText(entry.content);
+                        modifiedEntries.add(key);
+                        convertedCount++;
+                    }
+
+                    // 轉換 key
+                    if (entry.key && Array.isArray(entry.key)) {
+                        entry.key = entry.key.map(k => hasChinese(k) ? convertText(k) : k);
+                    }
+
+                    // 轉換 keysecondary
+                    if (entry.keysecondary && Array.isArray(entry.keysecondary)) {
+                        entry.keysecondary = entry.keysecondary.map(k => hasChinese(k) ? convertText(k) : k);
+                    }
+                }
+
+                // 檔名也簡轉繁，再加上 _TW
+                if (originalFileName) {
+                    originalFileName = convertText(originalFileName);
+                    if (!originalFileName.includes('_TW')) {
+                        originalFileName = originalFileName + '_TW';
+                    }
+                }
+
+                // 重新渲染
+                renderWorldInfo(currentWorldInfo);
+
+                statusEl.innerHTML = `<i class="fa-solid fa-check"></i> 轉換完成！已處理 ${convertedCount} 個欄位`;
+                statusEl.style.color = 'var(--success)';
+                setTimeout(() => {
+                    statusEl.textContent = originalText;
+                    statusEl.style.color = '';
+                }, 3000);
+
+            } catch (error) {
+                console.error('轉換失敗:', error);
+                showError('轉換失敗: ' + error.message);
+                statusEl.textContent = originalText;
+                statusEl.style.color = '';
+            }
+        }
+
+        // === 錯誤處理 ===
+
+        function showError(message) {
+            document.getElementById('errorContainer').innerHTML = `
+                <div class="error-message">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>${escapeHtml(message)}</span>
+                </div>
+            `;
+        }
+
+        function clearError() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
