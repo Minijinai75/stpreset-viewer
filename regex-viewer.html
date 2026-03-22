@@ -982,16 +982,27 @@
 
         // ===== 匯出 =====
 
+        function getTodayStr() {
+            const d = new Date();
+            const yy = String(d.getFullYear()).slice(-2);
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${yy}${mm}${day}`;
+        }
+
         function exportScripts() {
             if (!currentScripts) return;
+            const fileName = `${originalFileName || 'regex-scripts'}_${getTodayStr()}.json`;
             const blob = new Blob([JSON.stringify(currentScripts, null, 4)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${originalFileName || 'regex-scripts'}.json`;
+            a.download = fileName;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('✅ 已匯出 ' + (originalFileName || 'regex-scripts') + '.json', 'success');
+            showToast('✅ 已匯出 ' + fileName, 'success');
         }
 
         // ===== 簡→繁轉換（智慧版：不觸碰 findRegex 正則符號）=====
@@ -1012,6 +1023,17 @@
             }
 
             let count = 0;
+
+            // 檔名也做簡→繁轉換，並加上 _TW（與 worldinfo-viewer 一致）
+            if (originalFileName) {
+                if (hasChinese(originalFileName)) {
+                    originalFileName = convertText(originalFileName);
+                }
+                if (!originalFileName.includes('_TW')) {
+                    originalFileName = originalFileName + '_TW';
+                }
+            }
+
             currentScripts = currentScripts.map(script => {
                 const converted = { ...script };
 
