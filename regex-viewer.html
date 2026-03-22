@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SillyTavern 正則腳本預覽器</title>
+    <meta name="description" content="上傳 SillyTavern Regex Script JSON 檔案，預覽、編輯、簡繁轉換、匯出正則腳本">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="lib/opencc-full.js"></script>
+    <script>
+        // 預初始化 OpenCC 轉換器
+        let openccConverter = null;
+        try {
+            if (window.OpenCC) {
+                openccConverter = OpenCC.Converter({ from: 'cn', to: 'twp' });
+                console.log('OpenCC 初始化成功');
+            }
+        } catch(e) {
+            console.warn('OpenCC 初始化失敗，使用備用方案:', e.message);
+            openccConverter = function(text) { return text; };
+        }
+    </script>
+    <script src="lib/taiwan-vocabs.js"></script>
+    <style>
+        :root {
+            --bg-primary: #F4F3EE;
+            --bg-secondary: #E8E6DF;
+            --bg-card: #FFFFFF;
+            --text-primary: #463F3A;
+            --text-secondary: #8A817C;
+            --text-muted: #BCB8B1;
+            --accent: #85BFD2;
+            --accent-dark: #5A9BB5;
+            --accent-light: #A8D5E5;
+            --border: #D5D0C7;
+            --success: #67c23a;
+            --warning: #E09F3E;
+            --danger: #E76F51;
+            --info: #6A89CC;
+            --regex-color: #8E44AD;
+            --replace-color: #16A085;
+            --disabled-color: #95A5A6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        header h1 i { color: var(--accent); margin-right: 0.5rem; }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .instruction-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .instruction-box h3 {
+            color: var(--accent-dark);
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .instruction-box ul {
+            padding-left: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .instruction-box li { margin-bottom: 0.35rem; }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--bg-card);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .upload-section.drag-over {
+            border-color: var(--accent);
+            background: rgba(133, 191, 210, 0.08);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .upload-section h2 {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        #fileInput { display: none; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
+        .btn-secondary { background: var(--text-muted); }
+        .btn-secondary:hover { background: var(--text-secondary); }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #5dab34; }
+        .btn-warning { background: var(--warning); }
+        .btn-warning:hover { background: #c98a35; }
+        .btn-info { background: var(--info); }
+        .btn-info:hover { background: #5577aa; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #c55a40; }
+
+        /* Error */
+        .error-message {
+            background: #FFF0F0;
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--danger);
+            margin-bottom: 1rem;
+        }
+
+        /* Preview Container */
+        .preview-container { display: none; }
+
+        /* Header Bar */
+        .preset-header {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .preset-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .preset-type {
+            background: var(--accent);
+            color: #fff;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Edit mode bar */
+        .edit-mode-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .edit-mode-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .edit-mode-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Stats */
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: block;
+            margin: 0.3rem 0;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* Script Manager */
+        .entry-manager {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .entry-manager-header {
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(133, 191, 210, 0.05);
+        }
+
+        .entry-manager-title {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .entry-manager-total {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .entry-list { list-style: none; }
+
+        .entry-list-header {
+            display: grid;
+            grid-template-columns: 28px 1fr 80px 60px 70px;
+            padding: 0.5rem 1rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        /* Script Item */
+        .entry-item {
+            display: grid;
+            grid-template-columns: 28px 1fr 80px 60px 70px;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--bg-secondary);
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .entry-item:hover { background: rgba(133, 191, 210, 0.06); }
+
+        .entry-item.disabled-row { opacity: 0.45; }
+
+        .entry-item.expanded { background: rgba(133, 191, 210, 0.04); }
+
+        /* Status icon */
+        .entry-status-icon {
+            font-size: 0.65rem;
+        }
+        .entry-status-icon.enabled { color: var(--success); }
+        .entry-status-icon.disabled-icon { color: var(--disabled-color); }
+
+        .entry-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow: hidden;
+        }
+
+        .entry-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .script-id-tag {
+            background: rgba(142, 68, 173, 0.1);
+            color: var(--regex-color);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-family: 'Fira Code', monospace;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Placement badges */
+        .placement-badges {
+            display: flex;
+            gap: 0.2rem;
+            flex-wrap: wrap;
+        }
+
+        .placement-badge {
+            display: inline-block;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .placement-1 { background: #3498DB; } /* user input */
+        .placement-2 { background: #2ECC71; } /* AI output */
+        .placement-4 { background: #E67E22; } /* slash command */
+        .placement-8 { background: #9B59B6; } /* world info */
+
+        /* substituteRegex badge */
+        .sub-badge {
+            display: inline-block;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            color: #fff;
+            background: var(--text-secondary);
+        }
+        .sub-badge.raw { background: #E74C3C; }
+
+        /* Tokens */
+        .entry-tokens {
+            text-align: right;
+            font-size: 0.8rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--text-secondary);
+        }
+
+        /* Expanded Content */
+        .entry-content {
+            display: none;
+            grid-column: 1 / -1;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin: 0.25rem 0.5rem 0.5rem;
+            font-size: 0.82rem;
+            line-height: 1.7;
+        }
+
+        .entry-item.expanded .entry-content { display: block; }
+
+        /* Content Meta Row */
+        .content-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .meta-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.72rem;
+        }
+
+        .meta-chip .chip-label {
+            color: var(--text-muted);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+        }
+
+        .meta-chip .chip-val {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .meta-chip.active .chip-val { color: var(--success); }
+        .meta-chip.inactive .chip-val { color: var(--disabled-color); }
+
+        /* Regex / Replace blocks */
+        .code-block-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .code-block-label i { font-size: 0.65rem; }
+        .code-block-label.regex-label { color: var(--regex-color); }
+        .code-block-label.replace-label { color: var(--replace-color); }
+
+        .code-block {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.78rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+            min-height: 2.5rem;
+        }
+
+        .code-block.regex-block {
+            border-left: 3px solid var(--regex-color);
+            color: var(--regex-color);
+        }
+
+        .code-block.replace-block {
+            border-left: 3px solid var(--replace-color);
+            color: var(--replace-color);
+        }
+
+        .code-block.empty-block {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Edit textareas */
+        .code-editor {
+            width: 100%;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.78rem;
+            background: #fff;
+            color: var(--text-primary);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 0.75rem;
+        }
+
+        .code-editor:focus {
+            outline: none;
+            border-color: var(--accent-dark);
+            box-shadow: 0 0 0 2px rgba(133, 191, 210, 0.2);
+        }
+
+        .field-edit-input {
+            width: 100%;
+            background: #fff;
+            color: var(--text-primary);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 0.35rem 0.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .field-edit-input:focus {
+            outline: none;
+            border-color: var(--accent-dark);
+        }
+
+        .entry-item.modified .entry-name::after {
+            content: ' ●';
+            color: var(--success);
+            margin-left: 0.25rem;
+        }
+
+        /* Sections */
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .section-title:hover { background: rgba(133, 191, 210, 0.05); }
+        .section-title h3 { font-size: 0.95rem; }
+        .section-title h3 i { color: var(--accent); margin-right: 0.5rem; }
+
+        .section-toggle {
+            transition: transform 0.2s;
+            color: var(--text-muted);
+        }
+
+        .section.collapsed .section-content { display: none; }
+        .section.collapsed .section-toggle { transform: rotate(-90deg); }
+
+        .section-content { padding: 0 1.25rem 1rem; }
+
+        .json-explorer {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .json-explorer pre {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        footer a { color: var(--accent-dark); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--text-primary);
+            color: #fff;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .entry-item { grid-template-columns: 28px 1fr 70px 50px; }
+            .entry-tokens { display: none; }
+            .stats-bar { flex-direction: column; }
+            .edit-mode-bar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 正則腳本預覽器</h1>
+            <p class="subtitle">上傳 Regex Script JSON 檔案，預覽、編輯、簡繁轉換再匯出</p>
+            <div class="instruction-box">
+                <h3><i class="fa-regular fa-lightbulb"></i> 簡易說明</h3>
+                <ul>
+                    <li>點擊 <strong>選擇檔案</strong> 或拖放正則腳本 JSON 檔案至此處（支援陣列格式 <code>[{...}]</code>）。</li>
+                    <li>點擊腳本條目可展開查看 <strong>findRegex</strong>（搜尋式）與 <strong>replaceString</strong>（替換字串）詳細內容。</li>
+                    <li>使用 <strong>簡→繁轉換</strong>：只轉換 <code>scriptName</code> 與 <code>replaceString</code> 中的中文，<strong>不觸碰</strong> <code>findRegex</code> 中的正則符號。</li>
+                    <li>完成後點擊 <strong>匯出</strong> 下載修改後的 JSON 檔案。</li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="upload-section" id="uploadSection">
+            <i class="fa-solid fa-code upload-icon"></i>
+            <h2>拖放 Regex JSON 檔案到這裡</h2>
+            <p style="color: var(--text-secondary); margin: 1rem 0;">或</p>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">
+                <i class="fa-solid fa-folder-open"></i> 選擇檔案
+            </button>
+            <input type="file" id="fileInput" accept=".json" onchange="handleFileSelect(event)">
+        </div>
+
+        <div id="errorContainer"></div>
+        <div id="previewContainer" class="preview-container"></div>
+    </div>
+
+    <footer>
+        <div>
+            <i class="fa-solid fa-code"></i> Made with <i class="fa-solid fa-heart" style="color: #f56c6c;"></i> by <strong>Minijinai75</strong>
+        </div>
+        <div style="margin-top: 0.5rem;">
+            © 2026 SillyTavern 正則腳本預覽器 | <a href="https://github.com/SillyTavern/SillyTavern" target="_blank">SillyTavern</a>
+        </div>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ===== 全域狀態 =====
+        let currentScripts = null;   // 正則腳本陣列
+        let originalFileName = '';
+        let editMode = false;
+        let modifiedScripts = new Set(); // 已修改的腳本 index
+
+        // ===== 常數：placement 位元對應 =====
+        const PLACEMENT_MAP = {
+            1: { label: 'User', cls: 'placement-1' },
+            2: { label: 'AI',   cls: 'placement-2' },
+            4: { label: 'Cmd',  cls: 'placement-4' },
+            8: { label: 'WI',   cls: 'placement-8' },
+        };
+
+        // ===== 拖放處理 =====
+        const uploadSection = document.getElementById('uploadSection');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('drag-over');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('drag-over');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) handleFile(file);
+        }
+
+        function handleFile(file) {
+            originalFileName = file.name.replace(/\.json$/i, '');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    // 接受陣列，或含有 scripts 欄位的物件
+                    let scripts;
+                    if (Array.isArray(json)) {
+                        scripts = json;
+                    } else if (Array.isArray(json.scripts)) {
+                        scripts = json.scripts;
+                    } else {
+                        showError('此 JSON 不是有效的 Regex Script 格式（需為陣列，或含 scripts 欄位）。');
+                        return;
+                    }
+                    // 至少需含 scriptName 或 findRegex 欄位
+                    if (scripts.length > 0 && scripts[0].scriptName === undefined && scripts[0].findRegex === undefined) {
+                        showError('腳本物件缺少 scriptName / findRegex 欄位，請確認格式正確。');
+                        return;
+                    }
+                    currentScripts = scripts;
+                    editMode = false;
+                    modifiedScripts.clear();
+                    renderScripts(scripts);
+                    clearError();
+                } catch (error) {
+                    showError('JSON 格式錯誤: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ===== 渲染主體 =====
+
+        function renderScripts(scripts) {
+            const container = document.getElementById('previewContainer');
+            const enabled = scripts.filter(s => !s.disabled).length;
+
+            let html = `
+                <div class="preset-header">
+                    <span class="preset-name">${escapeHtml(originalFileName || 'Regex Scripts')}</span>
+                    <span class="preset-type">Regex Script · ${scripts.length} 條</span>
+                </div>
+
+                <div class="edit-mode-bar">
+                    <div class="edit-mode-info">
+                        <i class="fa-solid fa-info-circle"></i>
+                        <span id="editModeStatus">${editMode ? '編輯模式：可修改 scriptName 與 replaceString' : '點擊「編輯模式」開始修改腳本'}</span>
+                    </div>
+                    <div class="edit-mode-actions">
+                        <button class="btn btn-info" onclick="convertToTraditional()" title="轉換 scriptName 和 replaceString 為台灣繁體中文">
+                            <i class="fa-solid fa-language"></i> 簡→繁轉換
+                        </button>
+                        <button class="btn ${editMode ? 'btn-secondary' : 'btn-warning'}" onclick="toggleEditMode()">
+                            <i class="fa-solid ${editMode ? 'fa-eye' : 'fa-pen'}"></i>
+                            ${editMode ? '結束編輯' : '編輯模式'}
+                        </button>
+                        <button class="btn btn-success" onclick="exportScripts()">
+                            <i class="fa-solid fa-download"></i> 匯出
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Stats
+            html += renderStats(scripts);
+
+            // Script List
+            html += renderScriptManager(scripts);
+
+            // Raw JSON
+            html += `
+                <div class="section collapsed" id="rawSection">
+                    <div class="section-title" onclick="toggleSection('rawSection')">
+                        <h3><i class="fa-solid fa-code"></i> Raw JSON</h3>
+                        <i class="fa-solid fa-chevron-down section-toggle"></i>
+                    </div>
+                    <div class="section-content">
+                        <div class="json-explorer">
+                            <pre>${escapeHtml(JSON.stringify(scripts, null, 2))}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        function renderStats(scripts) {
+            const enabled = scripts.filter(s => !s.disabled).length;
+            const mdOnly  = scripts.filter(s => s.markdownOnly).length;
+            const promptOnly = scripts.filter(s => s.promptOnly).length;
+            const groups = [...new Set(scripts.map(s => s.id).filter(Boolean))].length;
+
+            const stats = [
+                { icon: 'fa-list', label: 'Scripts', value: `${enabled}/${scripts.length}` },
+                { icon: 'fa-layer-group', label: 'Groups (id)', value: groups },
+                { icon: 'fa-markdown', label: 'MD Only', value: mdOnly },
+                { icon: 'fa-comment-dots', label: 'Prompt Only', value: promptOnly },
+            ];
+
+            return `
+                <div class="stats-bar">
+                    ${stats.map(s => `
+                        <div class="stat-item">
+                            <i class="fa-solid ${s.icon}" style="color: var(--accent);"></i>
+                            <span class="stat-value">${s.value}</span>
+                            <span class="stat-label">${s.label}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderScriptManager(scripts) {
+            return `
+                <div class="entry-manager">
+                    <div class="entry-manager-header">
+                        <span class="entry-manager-title">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Regex Scripts
+                        </span>
+                        <span class="entry-manager-total">共 ${scripts.length} 條腳本</span>
+                    </div>
+                    <ul class="entry-list">
+                        <li class="entry-list-header">
+                            <span></span>
+                            <span>Name / Group ID</span>
+                            <span>Placement</span>
+                            <span>Mode</span>
+                            <span style="text-align:right">Depth</span>
+                        </li>
+                        ${scripts.map((s, idx) => renderScriptItem(s, idx)).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        function renderScriptItem(s, idx) {
+            const isDisabled = !!s.disabled;
+            const isModified = modifiedScripts.has(idx);
+
+            // Placement badges
+            const placements = Array.isArray(s.placement) ? s.placement : [];
+            const placBadges = placements.map(p => {
+                const info = PLACEMENT_MAP[p];
+                return info
+                    ? `<span class="placement-badge ${info.cls}">${info.label}</span>`
+                    : `<span class="placement-badge" style="background:var(--text-muted)">${p}</span>`;
+            }).join('');
+
+            // substituteRegex
+            const subMode = s.substituteRegex === 1
+                ? `<span class="sub-badge raw">Raw</span>`
+                : `<span class="sub-badge">Std</span>`;
+
+            // Depth range
+            const minD = s.minDepth != null ? s.minDepth : '∞';
+            const maxD = s.maxDepth != null ? s.maxDepth : '∞';
+            const depthStr = `${minD}~${maxD}`;
+
+            const scriptName = s.scriptName || '（未命名）';
+            const groupId    = s.id ? `<span class="script-id-tag">${escapeHtml(s.id)}</span>` : '';
+
+            return `
+                <li class="entry-item ${isDisabled ? 'disabled-row' : ''} ${isModified ? 'modified' : ''}"
+                    id="script-row-${idx}"
+                    onclick="toggleExpand(${idx})">
+                    <span class="entry-status-icon ${isDisabled ? 'disabled-icon' : 'enabled'}">
+                        <i class="fa-solid ${isDisabled ? 'fa-circle-xmark' : 'fa-circle-check'}"></i>
+                    </span>
+                    <span class="entry-name-cell">
+                        <span class="entry-name">${escapeHtml(scriptName)}</span>
+                        ${groupId}
+                    </span>
+                    <span class="placement-badges">${placBadges || '<span style="color:var(--text-muted);font-size:0.7rem">—</span>'}</span>
+                    <span>${subMode}</span>
+                    <span class="entry-tokens">${depthStr}</span>
+
+                    <!-- 展開內容，grid-column span -->
+                    <div class="entry-content" id="content-${idx}">
+                        ${renderScriptContent(s, idx)}
+                    </div>
+                </li>
+            `;
+        }
+
+        function renderScriptContent(s, idx) {
+            const findRegex    = s.findRegex    || '';
+            const replaceStr   = s.replaceString || '';
+            const scriptName   = s.scriptName   || '';
+
+            const boolChip = (label, val, trueColor, falseColor) => `
+                <span class="meta-chip ${val ? 'active' : 'inactive'}">
+                    <span class="chip-label">${label}</span>
+                    <span class="chip-val">${val ? '✓' : '✗'}</span>
+                </span>
+            `;
+
+            const metaChips = `
+                <div class="content-meta-row">
+                    ${boolChip('Disabled',    s.disabled,     '', '')}
+                    ${boolChip('mdOnly',      s.markdownOnly, '', '')}
+                    ${boolChip('promptOnly',  s.promptOnly,   '', '')}
+                    ${boolChip('runOnEdit',   s.runOnEdit,    '', '')}
+                    <span class="meta-chip">
+                        <span class="chip-label">subRegex</span>
+                        <span class="chip-val">${s.substituteRegex ?? 0}</span>
+                    </span>
+                    <span class="meta-chip">
+                        <span class="chip-label">minDepth</span>
+                        <span class="chip-val">${s.minDepth ?? '∞'}</span>
+                    </span>
+                    <span class="meta-chip">
+                        <span class="chip-label">maxDepth</span>
+                        <span class="chip-val">${s.maxDepth ?? '∞'}</span>
+                    </span>
+                </div>
+            `;
+
+            if (!editMode) {
+                return `
+                    ${metaChips}
+                    <div class="code-block-label regex-label">
+                        <i class="fa-solid fa-magnifying-glass"></i> findRegex（搜尋式 — 不參與簡繁轉換）
+                    </div>
+                    <div class="code-block regex-block ${!findRegex ? 'empty-block' : ''}">${findRegex ? escapeHtml(findRegex) : '（空）'}</div>
+
+                    <div class="code-block-label replace-label">
+                        <i class="fa-solid fa-right-left"></i> replaceString（替換字串）
+                    </div>
+                    <div class="code-block replace-block ${!replaceStr ? 'empty-block' : ''}">${replaceStr ? escapeHtml(replaceStr) : '（空字串）'}</div>
+                `;
+            } else {
+                return `
+                    ${metaChips}
+                    <div class="code-block-label">
+                        <i class="fa-solid fa-tag"></i> scriptName
+                    </div>
+                    <input class="field-edit-input" type="text"
+                        value="${escapeHtmlAttr(scriptName)}"
+                        onclick="event.stopPropagation()"
+                        oninput="handleScriptEdit(${idx}, 'scriptName', this.value)">
+
+                    <div class="code-block-label regex-label">
+                        <i class="fa-solid fa-magnifying-glass"></i> findRegex（搜尋式 — 不參與簡繁轉換）
+                    </div>
+                    <textarea class="code-editor" onclick="event.stopPropagation()"
+                        oninput="handleScriptEdit(${idx}, 'findRegex', this.value)">${escapeHtml(findRegex)}</textarea>
+
+                    <div class="code-block-label replace-label">
+                        <i class="fa-solid fa-right-left"></i> replaceString（替換字串）
+                    </div>
+                    <textarea class="code-editor" style="min-height:120px" onclick="event.stopPropagation()"
+                        oninput="handleScriptEdit(${idx}, 'replaceString', this.value)">${escapeHtml(replaceStr)}</textarea>
+                `;
+            }
+        }
+
+        // ===== 交互 =====
+
+        function toggleExpand(idx) {
+            const row = document.getElementById(`script-row-${idx}`);
+            if (!row) return;
+            row.classList.toggle('expanded');
+        }
+
+        function handleScriptEdit(idx, field, value) {
+            if (!currentScripts) return;
+            currentScripts[idx][field] = value;
+            modifiedScripts.add(idx);
+            // 更新 modified 樣式
+            const row = document.getElementById(`script-row-${idx}`);
+            if (row) row.classList.add('modified');
+        }
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            renderScripts(currentScripts);
+            // 恢復所有展開狀態（重新渲染後全部收起，行為一致）
+        }
+
+        function toggleSection(id) {
+            document.getElementById(id)?.classList.toggle('collapsed');
+        }
+
+        // ===== 匯出 =====
+
+        function exportScripts() {
+            if (!currentScripts) return;
+            const blob = new Blob([JSON.stringify(currentScripts, null, 4)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${originalFileName || 'regex-scripts'}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ 已匯出 ' + (originalFileName || 'regex-scripts') + '.json', 'success');
+        }
+
+        // ===== 簡→繁轉換（智慧版：不觸碰 findRegex 正則符號）=====
+        // 轉換欄位：scriptName、replaceString（只轉中文文字部分）
+        // 不轉換欄位：findRegex（正則可能含中文匹配字元，但轉換正則符號會破壞功能）
+
+        async function convertToTraditional() {
+            if (!currentScripts) return;
+
+            // Lazy init OpenCC
+            if (!openccConverter) {
+                try {
+                    openccConverter = OpenCC.Converter({ from: 'cn', to: 'twp' });
+                } catch(e) {
+                    showToast('❌ OpenCC 初始化失敗', 'error');
+                    return;
+                }
+            }
+
+            let count = 0;
+            currentScripts = currentScripts.map(script => {
+                const converted = { ...script };
+
+                // 轉換 scriptName
+                if (hasChinese(script.scriptName)) {
+                    converted.scriptName = convertText(script.scriptName);
+                    count++;
+                }
+
+                // 轉換 replaceString
+                // ⚠️ replaceString 可能含有 HTML/程式碼，智慧轉換只替換中文詞彙
+                if (hasChinese(script.replaceString)) {
+                    converted.replaceString = convertText(script.replaceString);
+                    count++;
+                }
+
+                // 轉換 trimStrings（若含中文）
+                if (Array.isArray(script.trimStrings)) {
+                    converted.trimStrings = script.trimStrings.map(t =>
+                        hasChinese(t) ? convertText(t) : t
+                    );
+                }
+
+                return converted;
+            });
+
+            modifiedScripts = new Set(currentScripts.map((_, i) => i));
+            renderScripts(currentScripts);
+            showToast(`✅ 已轉換 ${count} 個欄位（findRegex 保持不變）`, 'success');
+        }
+
+        function convertText(text) {
+            if (!text) return text;
+            let result = text;
+
+            // 1. linguipediaVocabs（簡體詞彙，OpenCC 前）
+            if (window.linguipediaVocabs) {
+                result = applyVocabReplacement(result, linguipediaVocabs);
+            }
+
+            // 2. OpenCC s2twp
+            try {
+                result = openccConverter(result);
+            } catch(e) {
+                console.warn('OpenCC 轉換失敗:', e);
+            }
+
+            // 3. taiwanChinaVocabs（繁體在地化詞彙，OpenCC 後）
+            if (window.taiwanChinaVocabs) {
+                result = applyVocabReplacement(result, taiwanChinaVocabs);
+            }
+
+            // 4. 語言指令替換
+            result = replaceLanguageDirectives(result);
+
+            return result;
+        }
+
+        function hasChinese(text) {
+            if (!text) return false;
+            return /[\u4e00-\u9fff]/.test(text);
+        }
+
+        function applyVocabReplacement(text, vocabs) {
+            if (!vocabs || !text) return text;
+            let result = text;
+            for (const { cn, tw } of vocabs) {
+                if (!cn || !tw || cn === tw) continue;
+                result = result.split(cn).join(tw);
+            }
+            return result;
+        }
+
+        function replaceLanguageDirectives(text) {
+            if (!text) return text;
+            return text
+                .replace(/简体中文/g, '繁體中文')
+                .replace(/zh-cn/gi, 'zh-TW')
+                .replace(/zh_CN/g, 'zh_TW')
+                .replace(/language:\s*Chinese\s*\(Simplified\)/gi, 'language: Chinese (Traditional)')
+                .replace(/写作语言[：:]\s*简体中文/g, '寫作語言：繁體中文')
+                .replace(/输出语言[：:]\s*简体中文/g, '輸出語言：繁體中文');
+        }
+
+        // ===== 錯誤顯示 =====
+
+        function showError(msg) {
+            const c = document.getElementById('errorContainer');
+            c.innerHTML = `<div class="error-message"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(msg)}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+
+        // ===== Toast =====
+
+        function showToast(msg, type = '') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show ' + type;
+            setTimeout(() => { t.className = 'toast'; }, 3000);
+        }
+
+        // ===== 工具函數 =====
+
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function escapeHtmlAttr(str) {
+            if (str == null) return '';
+            return String(str).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+    </script>
+</body>
+</html>
