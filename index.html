@@ -406,6 +406,41 @@
             color: var(--injection-color);
         }
 
+        .prompt-delete-btn {
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: var(--important-color);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            white-space: nowrap;
+            user-select: none;
+            margin-left: 0.25rem;
+        }
+
+        .prompt-delete-btn:hover {
+            color: var(--danger);
+            border-color: var(--danger);
+            background: rgba(231, 111, 81, 0.08);
+        }
+
+        .prompt-delete-btn.pending {
+            color: #fff;
+            background: var(--danger);
+            border-color: var(--danger);
+            font-size: 0.7rem;
+            animation: pulse-delete 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse-delete {
+            from { box-shadow: 0 0 0 0 rgba(231, 111, 81, 0.5); }
+            to   { box-shadow: 0 0 0 5px rgba(231, 111, 81, 0); }
+        }
+
         .prompt-tokens {
             text-align: right;
             font-family: 'Consolas', monospace;
@@ -1183,6 +1218,9 @@
                         <span class="prompt-toggle ${toggleClass}" onclick="togglePrompt('${prompt.identifier}')" title="${prompt.enabled ? '點擊停用' : '點擊啟用'}">
                             <i class="fa-solid ${toggleIcon}"></i>
                         </span>
+                        ${editMode ? `<span class="prompt-delete-btn" id="del-${prompt.identifier}" onclick="deletePrompt('${prompt.identifier}')" title="刪除此提詞">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </span>` : ''}
                     </span>
                     <span class="prompt-tokens">${prompt.marker ? '-' : tokens}</span>
                     ${content}
@@ -1372,8 +1410,51 @@
 
         // === 編輯功能 ===
 
+        let pendingDeleteId = null; // 追蹤第一步確認的 identifier
+
         function toggleEditMode() {
             editMode = !editMode;
+            pendingDeleteId = null;
+            renderPreset(currentPreset);
+        }
+
+        function deletePrompt(identifier) {
+            const btn = document.getElementById('del-' + identifier);
+            if (!btn) return;
+
+            if (pendingDeleteId !== identifier) {
+                // 第一步：取消其他待確認的按鈕，顯示確認狀態
+                if (pendingDeleteId) {
+                    const prev = document.getElementById('del-' + pendingDeleteId);
+                    if (prev) {
+                        prev.classList.remove('pending');
+                        prev.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                        prev.title = '刪除此提詞';
+                    }
+                }
+                pendingDeleteId = identifier;
+                btn.classList.add('pending');
+                btn.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 確認刪除?';
+                btn.title = '再次點擊確認刪除（此操作不可恢復）';
+                return;
+            }
+
+            // 第二步：正式刪除
+            // 1. 從 prompts[] 移除
+            currentPreset.prompts = currentPreset.prompts.filter(p => p.identifier !== identifier);
+
+            // 2. 從所有 prompt_order[x].order[] 移除（保持格式完整）
+            if (currentPreset.prompt_order && Array.isArray(currentPreset.prompt_order)) {
+                currentPreset.prompt_order.forEach(po => {
+                    if (po.order && Array.isArray(po.order)) {
+                        po.order = po.order.filter(o => o.identifier !== identifier);
+                    }
+                });
+            }
+
+            pendingDeleteId = null;
+            modifiedPrompts.delete(identifier);
+            modifiedPrompts.add('__deleted__'); // 標記有刪除操作
             renderPreset(currentPreset);
         }
 
