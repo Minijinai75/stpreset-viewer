@@ -414,8 +414,6 @@
             border-radius: 8px;
             margin: 0.5rem 0;
             font-size: 0.82rem;
-            line-height: 1.7;
-            white-space: pre-wrap;
             word-break: break-word;
             color: var(--text-primary);
         }
@@ -884,27 +882,7 @@
             const keysSecondary = entry.keysecondary || [];
 
             if (editMode) {
-                return `
-                    <div class="entry-content-meta">
-                        <span><span class="label">UID:</span> <span class="value">${entry.uid}</span></span>
-                        <span><span class="label">Key:</span> <span class="value">${escapeHtml(keys.join(', ') || '(none)')}</span></span>
-                        <span><span class="label">Secondary:</span> <span class="value">${escapeHtml(keysSecondary.join(', ') || '(none)')}</span></span>
-                    </div>
-                    <div style="margin-bottom: 0.5rem;">
-                        <label style="font-size: 0.75rem; color: var(--text-muted);">Comment:</label>
-                        <input class="field-edit-input" value="${escapeHtml(entry.comment || '')}" onchange="handleEntryEdit('${entry._key}', 'comment', this.value)" onclick="event.stopPropagation()">
-                    </div>
-                    <div style="margin-bottom: 0.5rem;">
-                        <label style="font-size: 0.75rem; color: var(--text-muted);">Key (逗號分隔):</label>
-                        <input class="field-edit-input" value="${escapeHtml(keys.join(', '))}" onchange="handleEntryEdit('${entry._key}', 'key', this.value)" onclick="event.stopPropagation()">
-                    </div>
-                    <div style="margin-bottom: 0.5rem;">
-                        <label style="font-size: 0.75rem; color: var(--text-muted);">Secondary Key (逗號分隔):</label>
-                        <input class="field-edit-input" value="${escapeHtml(keysSecondary.join(', '))}" onchange="handleEntryEdit('${entry._key}', 'keysecondary', this.value)" onclick="event.stopPropagation()">
-                    </div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted);">Content:</label>
-                    <textarea class="entry-content-editor" data-key="${entry._key}" onchange="handleEntryEdit('${entry._key}', 'content', this.value)" onclick="event.stopPropagation()">${escapeHtml(entry.content || '')}</textarea>
-                `;
+                return `<div class="entry-content-meta"><span><span class="label">UID:</span> <span class="value">${entry.uid}</span></span><span><span class="label">Key:</span> <span class="value">${escapeHtml(keys.join(', ') || '(none)')}</span></span><span><span class="label">Secondary:</span> <span class="value">${escapeHtml(keysSecondary.join(', ') || '(none)')}</span></span></div><div style="margin-bottom:0.5rem"><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.2rem">Comment:</label><input class="field-edit-input" value="${escapeHtml(entry.comment || '')}" onchange="handleEntryEdit('${entry._key}', 'comment', this.value)" onclick="event.stopPropagation()"></div><div style="margin-bottom:0.5rem"><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.2rem">Key (逗號分隔):</label><input class="field-edit-input" value="${escapeHtml(keys.join(', '))}" onchange="handleEntryEdit('${entry._key}', 'key', this.value)" onclick="event.stopPropagation()"></div><div style="margin-bottom:0.5rem"><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.2rem">Secondary Key (逗號分隔):</label><input class="field-edit-input" value="${escapeHtml(keysSecondary.join(', '))}" onchange="handleEntryEdit('${entry._key}', 'keysecondary', this.value)" onclick="event.stopPropagation()"></div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.2rem">Content:</label><textarea class="entry-content-editor" data-key="${entry._key}" onchange="handleEntryEdit('${entry._key}', 'content', this.value)" onclick="event.stopPropagation()">${escapeHtml(entry.content || '')}</textarea>`;
             }
 
             return `
