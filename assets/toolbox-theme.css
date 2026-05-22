@@ -1,0 +1,313 @@
+:root {
+  --tool-bg: #f6f3fb;
+  --tool-ink: #2c2940;
+  --tool-muted: #706d86;
+  --tool-line: #dcd5ec;
+  --tool-panel: rgba(255, 253, 252, 0.9);
+  --tool-panel-solid: #fffdfc;
+  --tool-panel-soft: #eef3fb;
+  --tool-blue: #8db7dd;
+  --tool-blue-dark: #547da8;
+  --tool-lavender: #c7b8e6;
+  --tool-lavender-dark: #7e6da8;
+  --tool-mint: #a9cdbb;
+  --tool-peach: #e6b39f;
+  --tool-cream: #fff4d8;
+  --tool-danger: #a85d6d;
+  --tool-shadow: 0 18px 42px rgba(67, 56, 101, 0.14);
+  --tool-mono: "Fira Code", "Cascadia Code", Consolas, monospace;
+  --tool-sans: "Noto Sans TC", "Yu Gothic UI", "Microsoft JhengHei", system-ui, sans-serif;
+}
+
+body.toolbox-page {
+  background:
+    radial-gradient(circle at 12% 6%, rgba(199, 184, 230, 0.38), transparent 24rem),
+    radial-gradient(circle at 88% 12%, rgba(141, 183, 221, 0.34), transparent 28rem),
+    radial-gradient(circle at 72% 92%, rgba(230, 179, 159, 0.2), transparent 26rem),
+    linear-gradient(90deg, rgba(126, 109, 168, 0.07) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(84, 125, 168, 0.055) 1px, transparent 1px),
+    var(--tool-bg) !important;
+  background-size: auto, auto, auto, 44px 44px, 44px 44px, auto !important;
+  color: var(--tool-ink) !important;
+  font-family: var(--tool-sans) !important;
+}
+
+.toolbox-nav {
+  position: sticky;
+  top: 0;
+  z-index: 9000;
+  border-bottom: 1px solid rgba(126, 109, 168, 0.22);
+  background: rgba(246, 243, 251, 0.82);
+  backdrop-filter: blur(18px) saturate(1.14);
+}
+
+.toolbox-nav-inner {
+  width: min(1180px, calc(100% - 28px));
+  min-height: 74px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.toolbox-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 230px;
+  color: var(--tool-ink);
+  text-decoration: none;
+}
+
+.toolbox-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(44, 41, 64, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62), transparent),
+    linear-gradient(135deg, var(--tool-blue), var(--tool-lavender));
+  box-shadow: 0 10px 20px rgba(84, 125, 168, 0.18);
+  color: #fff;
+  font: 800 0.86rem/1 var(--tool-mono);
+}
+
+.toolbox-brand-copy strong {
+  display: block;
+  font-size: 0.96rem;
+  line-height: 1.22;
+}
+
+.toolbox-brand-copy span {
+  display: block;
+  margin-top: 3px;
+  color: var(--tool-muted);
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.toolbox-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbox-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 1px solid rgba(126, 109, 168, 0.24);
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: rgba(255, 253, 252, 0.72);
+  color: var(--tool-muted);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 0.84rem;
+  box-shadow: 0 7px 16px rgba(67, 56, 101, 0.06);
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.toolbox-link:hover {
+  transform: translateY(-1px);
+  border-color: var(--tool-blue);
+  color: var(--tool-blue-dark);
+  background: #fff;
+}
+
+.toolbox-link.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--tool-blue-dark), var(--tool-lavender-dark));
+  color: #fff;
+}
+
+.toolbox-page-note {
+  width: min(1180px, calc(100% - 28px));
+  margin: 14px auto 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(126, 109, 168, 0.22);
+  border-radius: 14px;
+  padding: 12px 15px;
+  background: rgba(255, 253, 252, 0.78);
+  box-shadow: 0 10px 24px rgba(67, 56, 101, 0.08);
+  color: var(--tool-muted);
+  font-size: 0.88rem;
+  line-height: 1.58;
+}
+
+.toolbox-page-note strong {
+  color: var(--tool-ink);
+}
+
+.toolbox-note-chip {
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: linear-gradient(135deg, var(--tool-cream), #efe2ff);
+  color: var(--tool-lavender-dark);
+  font: 800 0.72rem/1 var(--tool-mono);
+  white-space: nowrap;
+}
+
+body.toolbox-page .container {
+  max-width: 1180px !important;
+  padding-top: 1.25rem !important;
+}
+
+body.toolbox-page .container > header:first-child,
+body.toolbox-page .preset-header,
+body.toolbox-page .panel,
+body.toolbox-page .section,
+body.toolbox-page .upload-section,
+body.toolbox-page .instruction-box,
+body.toolbox-page .preview-container,
+body.toolbox-page .stat-card,
+body.toolbox-page .edit-mode-bar,
+body.toolbox-page .metric,
+body.toolbox-page .item,
+body.toolbox-page .entry-item {
+  border-radius: 14px !important;
+  border-color: rgba(126, 109, 168, 0.22) !important;
+  box-shadow: var(--tool-shadow);
+}
+
+body.toolbox-page .container > header:first-child {
+  padding: 1.8rem;
+  background: var(--tool-panel);
+  border: 1px solid var(--tool-line);
+  text-align: left;
+}
+
+body.toolbox-page header h1,
+body.toolbox-page .brand h1,
+body.toolbox-page .preset-name {
+  color: var(--tool-ink) !important;
+  letter-spacing: 0 !important;
+}
+
+body.toolbox-page .subtitle,
+body.toolbox-page .brand p,
+body.toolbox-page .instruction-box li,
+body.toolbox-page .footer-note {
+  color: var(--tool-muted) !important;
+}
+
+body.toolbox-page .upload-section {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(238, 243, 251, 0.7)),
+    var(--tool-panel-solid) !important;
+  border-width: 1px !important;
+}
+
+body.toolbox-page .btn,
+body.toolbox-page button.primary,
+body.toolbox-page .open {
+  border-radius: 999px !important;
+}
+
+body.toolbox-page .btn-info,
+body.toolbox-page .btn-success,
+body.toolbox-page .btn-warning,
+body.toolbox-page button.primary {
+  background: linear-gradient(135deg, var(--tool-blue-dark), var(--tool-lavender-dark)) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+body.toolbox-page .btn-info:hover,
+body.toolbox-page .btn-success:hover,
+body.toolbox-page .btn-warning:hover,
+body.toolbox-page button.primary:hover {
+  background: linear-gradient(135deg, #496f9b, #725f9c) !important;
+}
+
+body.toolbox-page .edit-mode-bar,
+body.toolbox-page .panel,
+body.toolbox-page .section,
+body.toolbox-page .metric,
+body.toolbox-page .item,
+body.toolbox-page .entry-item {
+  background: var(--tool-panel-solid) !important;
+}
+
+body.toolbox-page .section-title,
+body.toolbox-page .panel-head,
+body.toolbox-page .entry-header {
+  background: linear-gradient(90deg, rgba(238, 243, 251, 0.92), rgba(245, 237, 255, 0.92)) !important;
+  border-color: rgba(126, 109, 168, 0.22) !important;
+}
+
+body.toolbox-page textarea,
+body.toolbox-page input,
+body.toolbox-page select,
+body.toolbox-page pre {
+  border-color: rgba(126, 109, 168, 0.24) !important;
+  background-color: #fffdfc !important;
+}
+
+body.toolbox-page .app {
+  min-height: calc(100vh - 74px);
+}
+
+body.toolbox-page .app aside {
+  top: 74px;
+  height: calc(100vh - 74px);
+  background:
+    linear-gradient(180deg, rgba(238, 243, 251, 0.96), rgba(245, 237, 255, 0.96)) !important;
+}
+
+body.toolbox-page .tab.active {
+  border-color: var(--tool-lavender) !important;
+  background: #fffdfc !important;
+}
+
+body.toolbox-page .badge,
+body.toolbox-page .tag {
+  border-color: rgba(126, 109, 168, 0.22) !important;
+}
+
+body.toolbox-page code {
+  font-family: var(--tool-mono);
+  color: var(--tool-lavender-dark);
+}
+
+@media (max-width: 920px) {
+  .toolbox-nav-inner {
+    min-height: auto;
+    padding: 12px 0;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .toolbox-links {
+    justify-content: flex-start;
+  }
+
+  .toolbox-page-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  body.toolbox-page .app aside {
+    top: 0;
+    height: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .toolbox-brand {
+    min-width: 0;
+  }
+
+  .toolbox-link {
+    flex: 1 1 calc(50% - 8px);
+  }
+}

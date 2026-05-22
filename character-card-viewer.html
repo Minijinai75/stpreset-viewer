@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SillyTavern 角色卡轉繁預覽器</title>
+  <script src="lib/opencc-full.js"></script>
+  <script src="lib/taiwan-vocabs.js"></script>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --surface: #fffaf2;
+      --surface-2: #f0eadf;
+      --ink: #2f2b25;
+      --muted: #706a60;
+      --line: #d9d0c1;
+      --accent: #24736b;
+      --accent-2: #d48232;
+      --danger: #b54848;
+      --ok: #39784d;
+      --shadow: 0 10px 28px rgba(54, 43, 31, 0.12);
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --sans: "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      padding: 0.55rem 0.8rem;
+    }
+
+    button:hover { border-color: var(--accent); }
+    button.primary { background: var(--accent); border-color: var(--accent); color: white; }
+    button.warn { background: #fff3e5; border-color: #e1ad71; }
+    button.danger { color: var(--danger); border-color: #d9aaaa; }
+    button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: #eee7dc;
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    main {
+      padding: 1rem;
+      min-width: 0;
+    }
+
+    .brand {
+      margin-bottom: 1rem;
+    }
+
+    .brand h1 {
+      font-size: 1.35rem;
+      line-height: 1.25;
+      margin: 0 0 0.35rem;
+    }
+
+    .brand p {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin: 0;
+    }
+
+    .dropzone {
+      border: 2px dashed #b8ad9c;
+      border-radius: 8px;
+      padding: 1rem;
+      background: rgba(255,255,255,0.35);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .dropzone.drag {
+      border-color: var(--accent);
+      background: #e6f1ee;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .toolbar {
+      display: grid;
+      gap: 0.45rem;
+      margin-bottom: 1rem;
+    }
+
+    .toolbar .row {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: grid;
+      gap: 0.35rem;
+      margin: 1rem 0;
+    }
+
+    .tab {
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      background: transparent;
+      border-color: transparent;
+      padding: 0.55rem 0.65rem;
+    }
+
+    .tab.active {
+      background: var(--surface);
+      border-color: var(--line);
+      box-shadow: 0 3px 10px rgba(61, 49, 38, 0.08);
+    }
+
+    .count {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .notice, .error {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .error {
+      color: var(--danger);
+      border-color: #d9aaaa;
+      background: #fff5f4;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+    }
+
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.8rem;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.45rem;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0.9rem;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .panel-body {
+      padding: 0.9rem;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .search,
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fffdf8;
+      color: var(--ink);
+      padding: 0.55rem 0.65rem;
+    }
+
+    .field textarea {
+      min-height: 160px;
+      resize: vertical;
+      line-height: 1.55;
+      font-family: var(--sans);
+    }
+
+    .field textarea.code {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.32rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .item-list {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    details.item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf8;
+      overflow: hidden;
+    }
+
+    details.item[open] {
+      box-shadow: 0 5px 16px rgba(54, 43, 31, 0.08);
+    }
+
+    summary {
+      cursor: pointer;
+      list-style: none;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.75rem;
+      padding: 0.72rem 0.85rem;
+      align-items: center;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    .title {
+      min-width: 0;
+    }
+
+    .title strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .title small {
+      display: block;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 0.18rem;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.28rem;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: #faf5ec;
+      padding: 0.16rem 0.45rem;
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .badge.on { color: var(--ok); border-color: #9ac0a2; background: #eef7ef; }
+    .badge.off { color: var(--danger); border-color: #d8a3a3; background: #fff1f1; }
+    .badge.accent { color: var(--accent); border-color: #91bbb5; background: #eef7f5; }
+
+    .item-body {
+      padding: 0 0.85rem 0.9rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .meta {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 0.7rem 0;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 0.7rem;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.45;
+      background: #f8f3ea;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 0.75rem;
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    .changed-dot {
+      display: inline-block;
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--accent-2);
+      margin-left: 0.35rem;
+      vertical-align: middle;
+    }
+
+    .hidden { display: none !important; }
+
+    .empty {
+      color: var(--muted);
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .field-grid, .split { grid-template-columns: 1fr; }
+      .filters { grid-template-columns: 1fr; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/toolbox-theme.css">
+  <script defer src="assets/toolbox-nav.js"></script>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>角色卡轉繁預覽器</h1>
+        <p>預覽、編輯與安全轉換 chara_card_v3 全包角色卡。</p>
+      </div>
+
+      <div id="dropzone" class="dropzone">
+        <p><strong>拖放 JSON 到這裡</strong></p>
+        <p>或選擇本機角色卡檔案</p>
+        <button class="primary" id="pickFile">選擇 JSON</button>
+        <input class="file-input" id="fileInput" type="file" accept=".json,application/json">
+      </div>
+
+      <div class="toolbar">
+        <div class="row">
+          <button id="loadSample">載入範例</button>
+          <button id="exportJson" class="primary" disabled>匯出 JSON</button>
+        </div>
+        <div class="row">
+          <button id="copyJson" disabled>複製 JSON</button>
+          <button id="resetCard" class="danger" disabled>還原</button>
+        </div>
+        <button id="convertTraditional" class="warn" disabled>安全簡→繁</button>
+        <button id="validateCard" class="warn" disabled>檢查格式風險</button>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-view="overview">總覽 <span class="count" id="count-overview">-</span></button>
+        <button class="tab" data-view="character">角色卡 <span class="count" id="count-character">-</span></button>
+        <button class="tab" data-view="worldbook">世界書 <span class="count" id="count-worldbook">0</span></button>
+        <button class="tab" data-view="regex">正則 <span class="count" id="count-regex">0</span></button>
+        <button class="tab" data-view="scripts">酒館助手腳本 <span class="count" id="count-scripts">0</span></button>
+        <button class="tab" data-view="raw">原始 JSON <span class="count" id="count-raw">-</span></button>
+      </div>
+
+      <div class="footer-note">
+        此工具只在瀏覽器本機讀取檔案，不會上傳角色卡內容。安全簡→繁會略過正則與酒館助手 JavaScript，避免破壞語法。
+      </div>
+    </aside>
+
+    <main>
+      <div id="message" class="notice">請先載入一份 MVU 全包 JSON。工具會拆成角色卡、世界書、正則、酒館助手腳本四區，方便檢查與修正文案。</div>
+      <section id="content"></section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      card: null,
+      original: null,
+      fileName: "mvu-card.json",
+      view: "overview",
+      query: "",
+      changed: new Set(),
+      warnings: []
+    };
+
+    let openccConverter = null;
+
+    const sampleCard = {
+      name: "範例角色",
+      description: "這裡是角色描述。",
+      personality: "",
+      scenario: "",
+      first_mes: "這裡是第一則訊息。",
+      mes_example: "<START>\n{{user}}: 你好\n{{char}}: 你好。",
+      creatorcomment: "範例卡。",
+      avatar: "none",
+      talkativeness: "0.5",
+      fav: false,
+      tags: ["MVU"],
+      spec: "chara_card_v3",
+      spec_version: "3.0",
+      data: {
+        name: "範例角色",
+        description: "這裡是角色描述。",
+        personality: "",
+        scenario: "",
+        first_mes: "這裡是第一則訊息。",
+        mes_example: "<START>\n{{user}}: 你好\n{{char}}: 你好。",
+        creator_notes: "",
+        system_prompt: "",
+        post_history_instructions: "",
+        tags: ["MVU"],
+        creator: "",
+        character_version: "1.0",
+        alternate_greetings: ["備選開場白一。"],
+        group_only_greetings: [],
+        extensions: {
+          regex_scripts: [],
+          tavern_helper: { scripts: [], variables: {} },
+          depth_prompt: { prompt: "", depth: 4, role: "system" },
+          world: "範例角色",
+          talkativeness: "0.5",
+          fav: false
+        },
+        character_book: {
+          name: "範例角色",
+          entries: [
+            {
+              id: 0,
+              keys: [],
+              secondary_keys: [],
+              comment: "[initvar]變量初始化",
+              content: "好感度: 0\n狀態: 初始",
+              constant: false,
+              selective: false,
+              enabled: false,
+              position: "before_char",
+              insertion_order: 200,
+              use_regex: false,
+              depth: 4,
+              order: 200,
+              extensions: { position: 0, depth: 4, role: 0, exclude_recursion: false, prevent_recursion: false, display_index: 0 }
+            }
+          ]
+        }
+      },
+      create_date: new Date().toISOString()
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const deepClone = (value) => JSON.parse(JSON.stringify(value));
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setMessage(text, type = "notice") {
+      const el = $("message");
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function getData() {
+      return state.card?.data || {};
+    }
+
+    function getExtensions() {
+      const data = getData();
+      if (!data.extensions) data.extensions = {};
+      return data.extensions;
+    }
+
+    function getWorldEntries() {
+      const data = getData();
+      return data.character_book?.entries || [];
+    }
+
+    function getRegexScripts() {
+      const ext = getExtensions();
+      if (!Array.isArray(ext.regex_scripts)) ext.regex_scripts = [];
+      return ext.regex_scripts;
+    }
+
+    function getTavernScripts() {
+      const ext = getExtensions();
+      if (Array.isArray(ext.TavernHelper_scripts)) return ext.TavernHelper_scripts;
+      if (Array.isArray(ext.tavern_helper?.scripts)) return ext.tavern_helper.scripts;
+      if (!ext.tavern_helper) ext.tavern_helper = { scripts: [], variables: {} };
+      if (!Array.isArray(ext.tavern_helper.scripts)) ext.tavern_helper.scripts = [];
+      return ext.tavern_helper.scripts;
+    }
+
+    function scriptValue(script) {
+      return script?.value && typeof script.value === "object" ? script.value : script;
+    }
+
+    function tokenEstimate(text) {
+      return Math.ceil(String(text || "").length / 3.2);
+    }
+
+    function markChanged(path) {
+      state.changed.add(path);
+      updateControls();
+      updateCounts();
+    }
+
+    function syncTopLevel(path) {
+      const data = getData();
+      if (path === "data.name" && data.name !== undefined) state.card.name = data.name;
+      if (path === "data.description" && data.description !== undefined) state.card.description = data.description;
+      if (path === "data.personality" && data.personality !== undefined) state.card.personality = data.personality;
+      if (path === "data.scenario" && data.scenario !== undefined) state.card.scenario = data.scenario;
+      if (path === "data.first_mes" && data.first_mes !== undefined) state.card.first_mes = data.first_mes;
+      if (path === "data.mes_example" && data.mes_example !== undefined) state.card.mes_example = data.mes_example;
+      if (path === "data.creator_notes" && data.creator_notes !== undefined) state.card.creatorcomment = data.creator_notes;
+      if (path === "data.tags" && Array.isArray(data.tags)) state.card.tags = data.tags;
+    }
+
+    function reconcileWorldEntry(path, value) {
+      const match = path.match(/^data\.character_book\.entries\.(\d+)\.(enabled|disable|order|insertion_order)$/);
+      if (!match) return;
+      const entry = getWorldEntries()[Number(match[1])];
+      if (!entry) return;
+      if (match[2] === "enabled" && "disable" in entry) entry.disable = !Boolean(value);
+      if (match[2] === "disable" && "enabled" in entry) entry.enabled = !Boolean(value);
+      if (match[2] === "order" && "insertion_order" in entry) entry.insertion_order = value;
+      if (match[2] === "insertion_order" && "order" in entry) entry.order = value;
+    }
+
+    function setPath(path, value) {
+      const parts = path.split(".");
+      let target = state.card;
+      for (let i = 0; i < parts.length - 1; i += 1) {
+        const key = parts[i];
+        if (!target[key] || typeof target[key] !== "object") target[key] = {};
+        target = target[key];
+      }
+      target[parts.at(-1)] = value;
+      syncTopLevel(path);
+      reconcileWorldEntry(path, value);
+      markChanged(path);
+    }
+
+    function updateControls() {
+      const loaded = Boolean(state.card);
+      $("exportJson").disabled = !loaded;
+      $("copyJson").disabled = !loaded;
+      $("resetCard").disabled = !loaded || !state.original;
+      $("convertTraditional").disabled = !loaded;
+      $("validateCard").disabled = !loaded;
+    }
+
+    function updateCounts() {
+      $("count-overview").textContent = state.card ? state.card.spec || "JSON" : "-";
+      $("count-character").textContent = state.card ? state.card.name || "未命名" : "-";
+      $("count-worldbook").textContent = String(state.card ? getWorldEntries().length : 0);
+      $("count-regex").textContent = String(state.card ? getRegexScripts().length : 0);
+      $("count-scripts").textContent = String(state.card ? getTavernScripts().length : 0);
+      $("count-raw").textContent = state.card ? `${state.changed.size} 改` : "-";
+    }
+
+    function loadCard(card, fileName = "mvu-card.json") {
+      state.card = card;
+      state.original = deepClone(card);
+      state.fileName = fileName;
+      state.changed.clear();
+      state.query = "";
+      validateCard(false);
+      updateControls();
+      updateCounts();
+      render();
+      setMessage(`已載入 ${fileName}`);
+    }
+
+    async function parseFile(file) {
+      const buffer = await file.arrayBuffer();
+      const encodings = ["utf-8", "big5"];
+      const errors = [];
+      for (const encoding of encodings) {
+        try {
+          const text = new TextDecoder(encoding).decode(buffer);
+          return JSON.parse(text);
+        } catch (error) {
+          errors.push(`${encoding}: ${error.message}`);
+        }
+      }
+      throw new Error(errors.join("；"));
+    }
+
+    async function handleFile(file) {
+      if (!file) return;
+      try {
+        const card = await parseFile(file);
+        loadCard(card, file.name);
+      } catch (error) {
+        setMessage(`無法解析 JSON：${error.message}`, "error");
+      }
+    }
+
+    function field(path, label, value, options = {}) {
+      const isCode = options.code ? " code" : "";
+      const rows = options.rows || 7;
+      const changed = state.changed.has(path) ? '<span class="changed-dot" title="已修改"></span>' : "";
+      return `
+        <div class="field">
+          <label>${escapeHtml(label)}${changed}</label>
+          <textarea class="${isCode}" rows="${rows}" data-path="${escapeHtml(path)}">${escapeHtml(value || "")}</textarea>
+        </div>
+      `;
+    }
+
+    function smallInput(path, label, value) {
+      const changed = state.changed.has(path) ? '<span class="changed-dot" title="已修改"></span>' : "";
+      return `
+        <div class="field">
+          <label>${escapeHtml(label)}${changed}</label>
+          <input data-path="${escapeHtml(path)}" value="${escapeHtml(value || "")}">
+        </div>
+      `;
+    }
+
+    function boolSelect(path, label, value) {
+      return `
+        <div class="field">
+          <label>${escapeHtml(label)}</label>
+          <select data-path="${escapeHtml(path)}" data-type="boolean">
+            <option value="true" ${value ? "selected" : ""}>true</option>
+            <option value="false" ${!value ? "selected" : ""}>false</option>
+          </select>
+        </div>
+      `;
+    }
+
+    function numberInput(path, label, value) {
+      return `
+        <div class="field">
+          <label>${escapeHtml(label)}</label>
+          <input type="number" data-path="${escapeHtml(path)}" data-type="number" value="${escapeHtml(value ?? "")}">
+        </div>
+      `;
+    }
+
+    function arrayInput(path, label, value) {
+      return `
+        <div class="field">
+          <label>${escapeHtml(label)}，每行一筆</label>
+          <textarea rows="5" data-path="${escapeHtml(path)}" data-type="array-lines">${escapeHtml((value || []).join("\n"))}</textarea>
+        </div>
+      `;
+    }
+
+    function render() {
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.view === state.view);
+      });
+
+      if (!state.card) {
+        $("content").innerHTML = `<div class="empty">尚未載入角色卡。</div>`;
+        return;
+      }
+
+      const views = {
+        overview: renderOverview,
+        character: renderCharacter,
+        worldbook: renderWorldbook,
+        regex: renderRegex,
+        scripts: renderScripts,
+        raw: renderRaw
+      };
+      $("content").innerHTML = views[state.view]();
+      bindEditors();
+    }
+
+    function renderOverview() {
+      const entries = getWorldEntries();
+      const regex = getRegexScripts();
+      const scripts = getTavernScripts();
+      const allText = [
+        getData().description,
+        getData().first_mes,
+        getData().mes_example,
+        ...entries.map((entry) => entry.content),
+        ...regex.map((item) => `${item.findRegex}\n${item.replaceString}`),
+        ...scripts.map((item) => scriptValue(item)?.content)
+      ].join("\n");
+      const warnings = validateCard(false);
+      return `
+        <div class="grid">
+          <div class="metric"><strong>${escapeHtml(state.card.name || "未命名")}</strong><span>角色名稱</span></div>
+          <div class="metric"><strong>${entries.length}</strong><span>世界書條目</span></div>
+          <div class="metric"><strong>${regex.length}</strong><span>正則腳本</span></div>
+          <div class="metric"><strong>${scripts.length}</strong><span>酒館助手腳本</span></div>
+        </div>
+        <div class="grid">
+          <div class="metric"><strong>${escapeHtml(state.card.spec || "-")}</strong><span>spec</span></div>
+          <div class="metric"><strong>${escapeHtml(state.card.spec_version || "-")}</strong><span>spec version</span></div>
+          <div class="metric"><strong>${tokenEstimate(allText).toLocaleString()}</strong><span>粗估 token</span></div>
+          <div class="metric"><strong>${state.changed.size}</strong><span>已修改欄位</span></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>格式風險</h2>
+            <button id="goValidate" class="warn">重新檢查</button>
+          </div>
+          <div class="panel-body">
+            ${warnings.length ? `<ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("")}</ul>` : "<p>目前沒有偵測到明顯格式風險。</p>"}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCharacter() {
+      const data = getData();
+      return `
+        <div class="panel">
+          <div class="panel-head"><h2>角色卡文字</h2><span class="count">頂層欄位會自動同步 data.*</span></div>
+          <div class="panel-body">
+            <div class="field-grid">
+              ${smallInput("data.name", "角色名稱", data.name)}
+              ${smallInput("data.character_version", "版本", data.character_version)}
+            </div>
+            ${field("data.description", "description 角色描述", data.description, { rows: 12 })}
+            ${field("data.first_mes", "first_mes 第一則訊息", data.first_mes, { rows: 10 })}
+            ${field("data.scenario", "scenario 場景", data.scenario, { rows: 5 })}
+            ${field("data.personality", "personality 性格摘要", data.personality, { rows: 5 })}
+            ${field("data.mes_example", "mes_example 對話範例", data.mes_example, { rows: 8 })}
+            ${field("data.creator_notes", "creator_notes / creatorcomment 使用說明", data.creator_notes ?? state.card.creatorcomment, { rows: 6 })}
+            ${arrayInput("data.alternate_greetings", "alternate_greetings 備選開場白", data.alternate_greetings || [])}
+            <div class="field-grid">
+              ${smallInput("data.creator", "creator", data.creator)}
+              ${smallInput("data.extensions.world", "extensions.world", getExtensions().world)}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getEntryKey(entry, index) {
+      return entry.id ?? entry.uid ?? index;
+    }
+
+    function getEntryOrder(entry) {
+      return entry.order ?? entry.insertion_order ?? "";
+    }
+
+    function getEntryPosition(entry) {
+      const pos = entry.extensions?.position ?? entry.position;
+      const map = { 0: "Before Char", 1: "After Char", 2: "Before AN", 3: "After AN", 4: "Depth", 5: "Before EM", 6: "After EM" };
+      if (typeof pos === "number") return map[pos] || `P${pos}`;
+      return pos || "-";
+    }
+
+    function getEntryKeys(entry) {
+      const keys = entry.keys ?? entry.key ?? [];
+      const secondary = entry.secondary_keys ?? entry.keysecondary ?? [];
+      return { keys, secondary };
+    }
+
+    function setEntryArrayField(entry, field, value) {
+      const items = value.split("\n").flatMap((line) => line.split(",")).map((item) => item.trim()).filter(Boolean);
+      if (field === "keys") {
+        if ("keys" in entry) entry.keys = items;
+        else entry.key = items;
+      }
+      if (field === "secondary_keys") {
+        if ("secondary_keys" in entry) entry.secondary_keys = items;
+        else entry.keysecondary = items;
+      }
+    }
+
+    function renderWorldbook() {
+      const entries = getWorldEntries();
+      return renderItemPanel("世界書", entries, "搜尋 comment、key、content", (entry, index) => {
+        const path = `data.character_book.entries.${index}`;
+        const { keys, secondary } = getEntryKeys(entry);
+        const title = entry.comment || `Entry ${getEntryKey(entry, index)}`;
+        const subtitle = [...keys, ...secondary].join(", ") || "無關鍵詞";
+        return `
+          <details class="item">
+            <summary>
+              <span class="title"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></span>
+              <span class="badges">
+                <span class="badge ${entry.enabled === false || entry.disable === true ? "off" : "on"}">${entry.enabled === false || entry.disable === true ? "disabled" : "enabled"}</span>
+                <span class="badge ${entry.constant ? "accent" : ""}">${entry.constant ? "constant" : "trigger"}</span>
+                <span class="badge">${escapeHtml(getEntryPosition(entry))}</span>
+                <span class="badge">order ${escapeHtml(getEntryOrder(entry))}</span>
+              </span>
+            </summary>
+            <div class="item-body">
+              <div class="meta">
+                <span>id: ${escapeHtml(getEntryKey(entry, index))}</span>
+                <span>depth: ${escapeHtml(entry.depth ?? entry.extensions?.depth ?? "-")}</span>
+                <span>role: ${escapeHtml(entry.role ?? entry.extensions?.role ?? "-")}</span>
+                <span>tokens: ${tokenEstimate(entry.content).toLocaleString()}</span>
+              </div>
+              <div class="field-grid">
+                ${smallInput(`${path}.comment`, "comment", entry.comment)}
+                ${numberInput(`${path}.order`, "order", getEntryOrder(entry))}
+                ${boolSelect(`${path}.enabled`, "enabled", entry.enabled !== false && entry.disable !== true)}
+                ${boolSelect(`${path}.constant`, "constant 藍燈", Boolean(entry.constant))}
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label>keys，每行或逗號分隔</label>
+                  <textarea rows="4" data-entry-index="${index}" data-entry-array="keys">${escapeHtml(keys.join("\n"))}</textarea>
+                </div>
+                <div class="field">
+                  <label>secondary_keys，每行或逗號分隔</label>
+                  <textarea rows="4" data-entry-index="${index}" data-entry-array="secondary_keys">${escapeHtml(secondary.join("\n"))}</textarea>
+                </div>
+              </div>
+              ${field(`${path}.content`, "content", entry.content, { rows: 13 })}
+            </div>
+          </details>
+        `;
+      });
+    }
+
+    function renderRegex() {
+      const items = getRegexScripts();
+      return renderItemPanel("正則", items, "搜尋 scriptName、findRegex、replaceString", (item, index) => {
+        const path = `data.extensions.regex_scripts.${index}`;
+        return `
+          <details class="item">
+            <summary>
+              <span class="title"><strong>${escapeHtml(item.scriptName || `Regex ${index + 1}`)}</strong><small>${escapeHtml(item.findRegex || "")}</small></span>
+              <span class="badges">
+                <span class="badge ${item.disabled ? "off" : "on"}">${item.disabled ? "disabled" : "enabled"}</span>
+                <span class="badge">placement ${(item.placement || []).join(",") || "-"}</span>
+                <span class="badge">${item.markdownOnly ? "markdown" : "all"}</span>
+                <span class="badge">${item.promptOnly ? "prompt" : "display"}</span>
+              </span>
+            </summary>
+            <div class="item-body">
+              <div class="field-grid">
+                ${smallInput(`${path}.scriptName`, "scriptName", item.scriptName)}
+                ${boolSelect(`${path}.disabled`, "disabled", Boolean(item.disabled))}
+                ${boolSelect(`${path}.markdownOnly`, "markdownOnly", Boolean(item.markdownOnly))}
+                ${boolSelect(`${path}.promptOnly`, "promptOnly", Boolean(item.promptOnly))}
+              </div>
+              ${field(`${path}.findRegex`, "findRegex", item.findRegex, { rows: 4, code: true })}
+              ${field(`${path}.replaceString`, "replaceString", item.replaceString, { rows: 12, code: true })}
+            </div>
+          </details>
+        `;
+      });
+    }
+
+    function renderScripts() {
+      const scripts = getTavernScripts();
+      return renderItemPanel("酒館助手腳本", scripts, "搜尋 name、id、content", (script, index) => {
+        const value = scriptValue(script);
+        const base = Array.isArray(getExtensions().TavernHelper_scripts) ? `data.extensions.TavernHelper_scripts.${index}.value` : `data.extensions.tavern_helper.scripts.${index}`;
+        const enabledPath = Array.isArray(getExtensions().TavernHelper_scripts) ? `data.extensions.TavernHelper_scripts.${index}.value.enabled` : `data.extensions.tavern_helper.scripts.${index}.enabled`;
+        return `
+          <details class="item">
+            <summary>
+              <span class="title"><strong>${escapeHtml(value?.name || `Script ${index + 1}`)}</strong><small>${escapeHtml(value?.id || script?.id || "")}</small></span>
+              <span class="badges">
+                <span class="badge ${value?.enabled === false ? "off" : "on"}">${value?.enabled === false ? "disabled" : "enabled"}</span>
+                <span class="badge">${escapeHtml(script?.type || "script")}</span>
+                <span class="badge">${tokenEstimate(value?.content).toLocaleString()} tok</span>
+              </span>
+            </summary>
+            <div class="item-body">
+              <div class="field-grid">
+                ${smallInput(`${base}.name`, "name", value?.name)}
+                ${smallInput(`${base}.id`, "id", value?.id)}
+                ${boolSelect(enabledPath, "enabled", value?.enabled !== false)}
+                ${smallInput(`${base}.info`, "info", value?.info)}
+              </div>
+              ${field(`${base}.content`, "content JavaScript", value?.content, { rows: 18, code: true })}
+              <div class="split">
+                <div>
+                  <label class="count">buttons / button</label>
+                  <pre>${escapeHtml(JSON.stringify(value?.buttons ?? value?.button ?? [], null, 2))}</pre>
+                </div>
+                <div>
+                  <label class="count">data</label>
+                  <pre>${escapeHtml(JSON.stringify(value?.data ?? {}, null, 2))}</pre>
+                </div>
+              </div>
+            </div>
+          </details>
+        `;
+      });
+    }
+
+    function renderItemPanel(title, items, placeholder, renderItem) {
+      const q = state.query.trim().toLowerCase();
+      const visible = q
+        ? items.map((item, index) => ({ item, index })).filter(({ item }) => JSON.stringify(item).toLowerCase().includes(q))
+        : items.map((item, index) => ({ item, index }));
+      return `
+        <div class="panel">
+          <div class="panel-head"><h2>${escapeHtml(title)}</h2><span class="count">${visible.length} / ${items.length}</span></div>
+          <div class="panel-body">
+            <div class="filters">
+              <input class="search" id="searchBox" value="${escapeHtml(state.query)}" placeholder="${escapeHtml(placeholder)}">
+              <button id="expandAll">全部展開</button>
+              <button id="collapseAll">全部收合</button>
+            </div>
+            <div class="item-list">
+              ${visible.length ? visible.map(({ item, index }) => renderItem(item, index)).join("") : '<div class="empty">沒有符合搜尋的項目。</div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRaw() {
+      return `
+        <div class="panel">
+          <div class="panel-head"><h2>原始 JSON</h2><span class="count">唯讀預覽</span></div>
+          <div class="panel-body">
+            <pre>${escapeHtml(JSON.stringify(state.card, null, 2))}</pre>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindEditors() {
+      document.querySelectorAll("[data-path]").forEach((el) => {
+        el.addEventListener("input", (event) => {
+          const path = event.target.dataset.path;
+          const type = event.target.dataset.type;
+          let value = event.target.value;
+          if (type === "boolean") value = value === "true";
+          if (type === "number") value = value === "" ? null : Number(value);
+          if (type === "array-lines") value = value.split("\n").map((line) => line.trim()).filter(Boolean);
+          setPath(path, value);
+        });
+      });
+
+      document.querySelectorAll("[data-entry-array]").forEach((el) => {
+        el.addEventListener("input", (event) => {
+          const index = Number(event.target.dataset.entryIndex);
+          const fieldName = event.target.dataset.entryArray;
+          const entry = getWorldEntries()[index];
+          setEntryArrayField(entry, fieldName, event.target.value);
+          markChanged(`data.character_book.entries.${index}.${fieldName}`);
+        });
+      });
+
+      $("searchBox")?.addEventListener("input", (event) => {
+        state.query = event.target.value;
+        render();
+      });
+
+      $("expandAll")?.addEventListener("click", () => {
+        document.querySelectorAll("details.item").forEach((item) => item.open = true);
+      });
+
+      $("collapseAll")?.addEventListener("click", () => {
+        document.querySelectorAll("details.item").forEach((item) => item.open = false);
+      });
+
+      $("goValidate")?.addEventListener("click", () => validateCard(true));
+    }
+
+    function hasChinese(text) {
+      return typeof text === "string" && /[\u3400-\u9fff]/.test(text);
+    }
+
+    function getVocabBucket(name) {
+      if (name === "before" && typeof linguipediaVocabs !== "undefined") return linguipediaVocabs;
+      if (name === "after" && typeof taiwanChinaVocabs !== "undefined") return taiwanChinaVocabs;
+      return [];
+    }
+
+    function applyVocabReplacement(text, vocabs) {
+      return vocabs.reduce((result, vocab) => {
+        if (!vocab?.cn || !vocab?.tw) return result;
+        const pattern = new RegExp(vocab.cn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+        return result.replace(pattern, vocab.tw);
+      }, text);
+    }
+
+    function replaceLanguageDirectives(text) {
+      return text
+        .replace(/簡體中文/g, "繁體中文")
+        .replace(/简体中文/g, "繁體中文")
+        .replace(/zh-cn/gi, "zh-tw")
+        .replace(/中國大陸/g, "台灣")
+        .replace(/中国大陆/g, "台灣");
+    }
+
+    function getConverter() {
+      if (openccConverter) return openccConverter;
+      if (!window.OpenCC) throw new Error("OpenCC 尚未載入");
+      openccConverter = OpenCC.Converter({ from: "cn", to: "twp" });
+      return openccConverter;
+    }
+
+    function convertText(text) {
+      if (!hasChinese(text)) return text;
+      let result = applyVocabReplacement(text, getVocabBucket("before"));
+      result = getConverter()(result);
+      result = applyVocabReplacement(result, getVocabBucket("after"));
+      return replaceLanguageDirectives(result);
+    }
+
+    function getPath(path) {
+      return path.split(".").reduce((target, key) => target?.[key], state.card);
+    }
+
+    function convertPath(path) {
+      const value = getPath(path);
+      if (typeof value !== "string") return false;
+      const converted = convertText(value);
+      if (converted === value) return false;
+      setPath(path, converted);
+      return true;
+    }
+
+    function convertArrayPath(path) {
+      const value = getPath(path);
+      if (!Array.isArray(value)) return false;
+      const converted = value.map((item) => typeof item === "string" ? convertText(item) : item);
+      if (JSON.stringify(converted) === JSON.stringify(value)) return false;
+      setPath(path, converted);
+      return true;
+    }
+
+    function convertCharacterCardToTraditional() {
+      if (!state.card) return;
+      try {
+        let changed = 0;
+        [
+          "data.name",
+          "data.description",
+          "data.personality",
+          "data.scenario",
+          "data.first_mes",
+          "data.mes_example",
+          "data.creator_notes",
+          "data.system_prompt",
+          "data.post_history_instructions",
+          "data.creator",
+          "data.character_version",
+          "data.extensions.world",
+          "data.extensions.depth_prompt.prompt",
+          "data.character_book.name",
+        ].forEach((path) => {
+          if (convertPath(path)) changed += 1;
+        });
+
+        ["data.tags", "data.alternate_greetings", "data.group_only_greetings"].forEach((path) => {
+          if (convertArrayPath(path)) changed += 1;
+        });
+
+        getWorldEntries().forEach((entry, index) => {
+          const base = `data.character_book.entries.${index}`;
+          ["comment", "content"].forEach((fieldName) => {
+            if (convertPath(`${base}.${fieldName}`)) changed += 1;
+          });
+
+          if (entry.use_regex !== true) {
+            const keyField = Array.isArray(entry.keys) ? "keys" : "key";
+            const secondaryField = Array.isArray(entry.secondary_keys) ? "secondary_keys" : "keysecondary";
+            if (convertArrayPath(`${base}.${keyField}`)) changed += 1;
+            if (convertArrayPath(`${base}.${secondaryField}`)) changed += 1;
+          }
+        });
+
+        getTavernScripts().forEach((script, index) => {
+          const base = Array.isArray(getExtensions().TavernHelper_scripts)
+            ? `data.extensions.TavernHelper_scripts.${index}.value`
+            : `data.extensions.tavern_helper.scripts.${index}`;
+          ["name", "info"].forEach((fieldName) => {
+            if (convertPath(`${base}.${fieldName}`)) changed += 1;
+          });
+        });
+
+        validateCard(false);
+        render();
+        setMessage(changed
+          ? `安全簡→繁完成：已更新 ${changed} 個文字欄位，正則與 JavaScript 腳本內容已略過。`
+          : "沒有找到需要轉換的簡體文字，正則與 JavaScript 腳本內容已略過。");
+      } catch (error) {
+        setMessage(`轉換失敗：${error.message}`, "error");
+      }
+    }
+
+    function validateCard(showMessage = true) {
+      const warnings = [];
+      if (!state.card) return warnings;
+      const data = getData();
+      const ext = getExtensions();
+
+      if (state.card.spec !== "chara_card_v3") warnings.push("spec 不是 chara_card_v3。");
+      if (String(state.card.spec_version) !== "3.0") warnings.push("spec_version 不是 3.0。");
+      ["name", "description", "first_mes", "mes_example", "scenario", "personality"].forEach((key) => {
+        if ((state.card[key] ?? "") !== (data[key] ?? "")) warnings.push(`頂層 ${key} 與 data.${key} 不一致。`);
+      });
+      if (data.system_prompt) warnings.push("data.system_prompt 不是空字串。");
+      if (data.post_history_instructions) warnings.push("data.post_history_instructions 不是空字串。");
+      if (!data.character_book?.entries || !Array.isArray(data.character_book.entries)) warnings.push("data.character_book.entries 不存在或不是陣列。");
+      if (!Array.isArray(ext.regex_scripts)) warnings.push("data.extensions.regex_scripts 不存在或不是陣列。");
+      if (!Array.isArray(ext.TavernHelper_scripts) && !Array.isArray(ext.tavern_helper?.scripts)) warnings.push("找不到 TavernHelper_scripts 或 tavern_helper.scripts。");
+
+      getWorldEntries().forEach((entry, index) => {
+        const extPos = entry.extensions?.position;
+        if (typeof entry.position === "number" && extPos !== undefined && entry.position !== extPos) warnings.push(`世界書 #${index} position 與 extensions.position 不一致。`);
+        if ("disable" in entry && "enabled" in entry && entry.disable === entry.enabled) warnings.push(`世界書 #${index} disable 與 enabled 狀態可能衝突。`);
+        if ("excludeRecursion" in entry && entry.extensions?.exclude_recursion !== undefined && entry.excludeRecursion !== entry.extensions.exclude_recursion) warnings.push(`世界書 #${index} excludeRecursion 鏡像不一致。`);
+        if ("preventRecursion" in entry && entry.extensions?.prevent_recursion !== undefined && entry.preventRecursion !== entry.extensions.prevent_recursion) warnings.push(`世界書 #${index} preventRecursion 鏡像不一致。`);
+      });
+
+      state.warnings = warnings;
+      if (showMessage) setMessage(warnings.length ? `檢查完成：發現 ${warnings.length} 個提醒。` : "檢查完成：沒有明顯格式風險。", warnings.length ? "notice" : "notice");
+      return warnings;
+    }
+
+    function exportCard() {
+      const text = JSON.stringify(state.card, null, 2);
+      const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const base = state.fileName.replace(/\.json$/i, "");
+      link.href = url;
+      link.download = `${base}_edited.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setMessage(`已匯出 ${link.download}`);
+    }
+
+    async function copyCard() {
+      await navigator.clipboard.writeText(JSON.stringify(state.card, null, 2));
+      setMessage("已複製 JSON 到剪貼簿。");
+    }
+
+    function resetCard() {
+      if (!state.original) return;
+      state.card = deepClone(state.original);
+      state.changed.clear();
+      validateCard(false);
+      updateCounts();
+      render();
+      setMessage("已還原到載入時的內容。");
+    }
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        state.view = tab.dataset.view;
+        state.query = "";
+        render();
+      });
+    });
+
+    $("pickFile").addEventListener("click", () => $("fileInput").click());
+    $("fileInput").addEventListener("change", (event) => handleFile(event.target.files[0]));
+    $("loadSample").addEventListener("click", () => loadCard(deepClone(sampleCard), "sample-card.json"));
+    $("exportJson").addEventListener("click", exportCard);
+    $("copyJson").addEventListener("click", copyCard);
+    $("resetCard").addEventListener("click", resetCard);
+    $("convertTraditional").addEventListener("click", convertCharacterCardToTraditional);
+    $("validateCard").addEventListener("click", () => {
+      validateCard(true);
+      state.view = "overview";
+      render();
+    });
+
+    const dropzone = $("dropzone");
+    ["dragenter", "dragover"].forEach((name) => {
+      dropzone.addEventListener(name, (event) => {
+        event.preventDefault();
+        dropzone.classList.add("drag");
+      });
+    });
+    ["dragleave", "drop"].forEach((name) => {
+      dropzone.addEventListener(name, (event) => {
+        event.preventDefault();
+        dropzone.classList.remove("drag");
+      });
+    });
+    dropzone.addEventListener("drop", (event) => handleFile(event.dataTransfer.files[0]));
+
+    updateControls();
+    updateCounts();
+    render();
+  </script>
+</body>
+</html>

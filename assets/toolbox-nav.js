@@ -1,0 +1,65 @@
+(() => {
+  const pages = [
+    { id: 'index', label: 'INDEX', href: 'index.html' },
+    { id: 'preset', label: '預設', href: 'preset-viewer.html' },
+    { id: 'worldinfo', label: '世界書', href: 'worldinfo-viewer.html' },
+    { id: 'character', label: '角色卡', href: 'character-card-viewer.html' },
+  ];
+
+  const notes = {
+    index: ['INDEX', '選擇要處理的 SillyTavern 內容類型。所有檔案都只在瀏覽器本機解析，不會上傳。'],
+    preset: ['PRESET', '預設頁會轉換 prompt 與常用文字欄位；正則 findRegex / replaceString 會保留原文，避免破壞美化規則。'],
+    worldinfo: ['WORLD', '世界書頁適合逐條檢查 comment、key、content 與啟用狀態，再匯出保留原 JSON 結構的版本。'],
+    character: ['CARD', '角色卡頁會拆成角色、世界書、正則、酒館助手腳本；安全轉繁會略過正則與 JavaScript。'],
+  };
+
+  function currentPageId() {
+    const file = decodeURIComponent(location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    if (!file || file === 'index.html') return 'index';
+    if (file.includes('preset')) return 'preset';
+    if (file.includes('worldinfo')) return 'worldinfo';
+    if (file.includes('character-card')) return 'character';
+    return 'index';
+  }
+
+  function createNav(activeId) {
+    const nav = document.createElement('nav');
+    nav.className = 'toolbox-nav';
+    nav.innerHTML = `
+      <div class="toolbox-nav-inner">
+        <a class="toolbox-brand" href="index.html" aria-label="回到工具箱首頁">
+          <span class="toolbox-mark">ST</span>
+          <span class="toolbox-brand-copy">
+            <strong>SillyTavern 繁中轉換工具箱</strong>
+            <span>空色與藤紫的本機 JSON 工作台</span>
+          </span>
+        </a>
+        <div class="toolbox-links" aria-label="頁面導覽">
+          ${pages.map((page) => `
+            <a class="toolbox-link ${page.id === activeId ? 'active' : ''}" href="${page.href}">${page.label}</a>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    return nav;
+  }
+
+  function createNote(activeId) {
+    const [chip, text] = notes[activeId] || notes.index;
+    const note = document.createElement('div');
+    note.className = 'toolbox-page-note';
+    note.innerHTML = `
+      <span><strong>${chip}</strong> ${text}</span>
+      <span class="toolbox-note-chip">Local only</span>
+    `;
+    return note;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const activeId = currentPageId();
+    document.body.classList.add('toolbox-page');
+    if (activeId === 'index') document.body.classList.add('toolbox-home');
+    document.body.prepend(createNote(activeId));
+    document.body.prepend(createNav(activeId));
+  });
+})();
