@@ -24,16 +24,16 @@
     <script src="lib/taiwan-vocabs.js"></script>
     <style>
         :root {
-            --bg-primary: #F4F3EE;
-            --bg-secondary: #E8E6DF;
-            --bg-card: #FFFFFF;
-            --text-primary: #463F3A;
-            --text-secondary: #8A817C;
-            --text-muted: #BCB8B1;
-            --accent: #85BFD2;
-            --accent-dark: #5A9BB5;
-            --accent-light: #A8D5E5;
-            --border: #D5D0C7;
+            --bg-primary: #edf8fc;
+            --bg-secondary: #e8f0fb;
+            --bg-card: #fffdfc;
+            --text-primary: #2f334a;
+            --text-secondary: #6d718d;
+            --text-muted: #9aa0b7;
+            --accent: #93c5e8;
+            --accent-dark: #5d89b5;
+            --accent-light: #dff3ff;
+            --border: #d6def3;
             --success: #67c23a;
             --warning: #E09F3E;
             --danger: #E76F51;
@@ -612,8 +612,10 @@
             .edit-mode-bar { flex-direction: column; align-items: stretch; }
         }
     </style>
+    <link rel="stylesheet" href="assets/toolbox-theme.css">
+    <script defer src="assets/toolbox-nav.js"></script>
 </head>
-<body>
+<body class="toolbox-page">
     <div class="container">
         <header>
             <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 正則腳本預覽器</h1>
@@ -643,7 +645,7 @@
         <div id="previewContainer" class="preview-container"></div>
     </div>
 
-    <footer>
+    <footer class="toolbox-footer">
         <div>
             Made with care by Minijinai75
         </div>

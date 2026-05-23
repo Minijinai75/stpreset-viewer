@@ -4,6 +4,7 @@
     { id: 'preset', label: '預設', href: 'preset-viewer.html' },
     { id: 'worldinfo', label: '世界書', href: 'worldinfo-viewer.html' },
     { id: 'character', label: '角色卡', href: 'character-card-viewer.html' },
+    { id: 'regex', label: '正則', href: 'regex-viewer.html' },
   ];
 
   const notes = {
@@ -11,6 +12,7 @@
     preset: ['PRESET', '預設頁會轉換 prompt 與常用文字欄位；正則 findRegex / replaceString 會保留原文，避免破壞美化規則。'],
     worldinfo: ['WORLD', '世界書頁適合逐條檢查 comment、key、content 與啟用狀態，再匯出保留原 JSON 結構的版本。'],
     character: ['CARD', '角色卡頁會拆成角色、世界書、正則、酒館助手腳本；安全轉繁會略過正則與 JavaScript。'],
+    regex: ['REGEX', '正則頁用來單獨預覽與手動修正腳本；findRegex 會保持原文，避免破壞規則。'],
   };
 
   function currentPageId() {
@@ -19,6 +21,7 @@
     if (file.includes('preset')) return 'preset';
     if (file.includes('worldinfo')) return 'worldinfo';
     if (file.includes('character-card')) return 'character';
+    if (file.includes('regex')) return 'regex';
     return 'index';
   }
 
@@ -30,7 +33,7 @@
         <a class="toolbox-brand" href="index.html" aria-label="回到工具箱首頁">
           <span class="toolbox-brand-copy">
             <strong>SillyTavern 繁中轉換工具箱</strong>
-            <span>空色與藤紫的本機 JSON 工作台</span>
+            <span>空藍雲朵風的本機 JSON 工作台</span>
           </span>
         </a>
         <div class="toolbox-links" aria-label="頁面導覽">
@@ -49,7 +52,7 @@
     note.className = 'toolbox-page-note';
     note.innerHTML = `
       <span><strong>${chip}</strong> ${text}</span>
-      <span class="toolbox-note-chip">Local only</span>
+      <span class="toolbox-note-chip">本機處理</span>
     `;
     return note;
   }

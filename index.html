@@ -7,19 +7,21 @@
   <meta name="description" content="協助繁體中文玩家安全預覽、編輯並轉換簡體中文 SillyTavern 內容。">
   <style>
     :root {
-      --bg: #f6f3fb;
-      --ink: #2c2940;
-      --muted: #706d86;
-      --line: #dcd5ec;
-      --panel: #fffdfc;
-      --panel-2: #eef3fb;
-      --accent: #8db7dd;
-      --accent-dark: #547da8;
-      --spark: #c7b8e6;
-      --warn: #a85d6d;
-      --shadow: 0 18px 45px rgba(67, 56, 101, 0.14);
-      --mono: "Fira Code", "Cascadia Code", Consolas, monospace;
-      --sans: "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --home-ink: #2f334a;
+      --home-muted: #6d718d;
+      --home-line: #d6def3;
+      --home-card: rgba(255, 253, 252, 0.86);
+      --home-card-solid: #fffdfc;
+      --home-blue: #93c5e8;
+      --home-blue-dark: #5d89b5;
+      --home-lavender: #cfc2ef;
+      --home-lavender-dark: #8171af;
+      --home-mint: #afd8ca;
+      --home-cream: #fff3d4;
+      --home-peach: #e9b8a9;
+      --home-shadow: 0 18px 42px rgba(81, 101, 142, 0.13);
+      --home-mono: "Fira Code", "Cascadia Code", Consolas, monospace;
+      --home-sans: "Noto Sans TC", "Yu Gothic UI", "Microsoft JhengHei", system-ui, sans-serif;
     }
 
     * { box-sizing: border-box; }
@@ -27,15 +29,8 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 12% 6%, rgba(199, 184, 230, 0.38), transparent 24rem),
-        radial-gradient(circle at 88% 12%, rgba(141, 183, 221, 0.34), transparent 28rem),
-        linear-gradient(90deg, rgba(126, 109, 168, 0.07) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(84, 125, 168, 0.055) 1px, transparent 1px),
-        var(--bg);
-      background-size: auto, auto, 44px 44px, 44px 44px, auto;
-      color: var(--ink);
-      font-family: var(--sans);
+      color: var(--home-ink);
+      font-family: var(--home-sans);
     }
 
     a { color: inherit; text-decoration: none; }
@@ -43,81 +38,331 @@
     .shell {
       width: min(1160px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 34px 0 44px;
+      padding: 30px 0 44px;
     }
 
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
-      gap: 22px;
+      grid-template-columns: minmax(0, 1.02fr) minmax(310px, 0.98fr);
+      gap: 18px;
       align-items: stretch;
-      margin-bottom: 22px;
+      margin-bottom: 18px;
     }
 
     .intro,
-    .policy {
-      background: rgba(255, 255, 255, 0.82);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
+    .sky-card,
+    .safety-panel {
+      border: 1px solid var(--home-line);
+      border-radius: 22px;
+      background: var(--home-card);
+      box-shadow: var(--home-shadow);
     }
 
     .intro {
-      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      padding: clamp(24px, 4vw, 42px);
+    }
+
+    .intro::after {
+      content: "";
+      position: absolute;
+      right: 34px;
+      bottom: 34px;
+      width: 78px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(147, 197, 232, 0.26);
+      box-shadow:
+        -22px -12px 0 6px rgba(207, 194, 239, 0.24),
+        24px -10px 0 4px rgba(255, 255, 255, 0.74);
     }
 
     .eyebrow {
       display: inline-flex;
-      gap: 8px;
       align-items: center;
-      color: var(--accent-dark);
-      font-family: var(--mono);
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 8px 12px;
+      border: 1px solid rgba(147, 197, 232, 0.42);
+      border-radius: 999px;
+      background: rgba(232, 246, 255, 0.68);
+      color: var(--home-blue-dark);
       font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 16px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
     }
 
     .eyebrow::before {
       content: "";
-      width: 26px;
-      height: 2px;
-      background: var(--accent);
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--home-lavender);
+      box-shadow: 14px 0 0 rgba(147, 197, 232, 0.78);
     }
 
     h1 {
+      max-width: 680px;
       margin: 0;
-      max-width: 720px;
-      font-size: clamp(2.1rem, 5vw, 4.6rem);
-      line-height: 0.98;
+      font-size: clamp(2rem, 4vw, 3.35rem);
+      line-height: 1.14;
       letter-spacing: 0;
     }
 
     .lead {
-      max-width: 680px;
-      margin: 20px 0 0;
-      color: var(--muted);
-      font-size: 1.02rem;
-      line-height: 1.8;
+      max-width: 650px;
+      margin: 18px 0 0;
+      color: var(--home-muted);
+      font-size: 1rem;
+      line-height: 1.82;
     }
 
-    .policy {
-      padding: 22px;
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 24px;
+    }
+
+    .quick-tags span,
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(137, 156, 205, 0.26);
+      border-radius: 999px;
+      background: rgba(255, 253, 252, 0.78);
+      color: var(--home-muted);
+      font-size: 0.8rem;
+    }
+
+    .quick-tags span { padding: 7px 11px; }
+    .tag { padding: 5px 9px; }
+
+    .sky-card {
+      position: relative;
+      min-height: 310px;
+      overflow: hidden;
+      padding: 24px;
+      background:
+        linear-gradient(165deg, rgba(232, 246, 255, 0.92), rgba(247, 241, 255, 0.9)),
+        var(--home-card-solid);
+    }
+
+    .cloud {
+      position: absolute;
+      display: block;
+      width: 116px;
+      height: 38px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 12px 30px rgba(81, 101, 142, 0.08);
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      background: inherit;
+    }
+
+    .cloud::before {
+      width: 48px;
+      height: 48px;
+      left: 18px;
+      top: -24px;
+    }
+
+    .cloud::after {
+      width: 62px;
+      height: 62px;
+      right: 15px;
+      top: -32px;
+    }
+
+    .cloud-one {
+      top: 54px;
+      left: 42px;
+      transform: rotate(-4deg);
+    }
+
+    .cloud-two {
+      width: 92px;
+      height: 30px;
+      top: 36px;
+      right: 48px;
+      opacity: 0.72;
+      transform: rotate(3deg);
+    }
+
+    .cloud-three {
+      width: 132px;
+      bottom: 42px;
+      right: 34px;
+      opacity: 0.78;
+      transform: rotate(-2deg);
+    }
+
+    .float-badge {
+      position: absolute;
       display: grid;
-      align-content: space-between;
-      gap: 18px;
+      place-items: center;
+      width: 70px;
+      height: 70px;
+      border: 1px solid rgba(137, 156, 205, 0.22);
+      border-radius: 22px;
+      background: rgba(255, 253, 252, 0.82);
+      color: var(--home-lavender-dark);
+      font-family: var(--home-mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      box-shadow: 0 14px 28px rgba(81, 101, 142, 0.1);
     }
 
-    .policy h2 {
-      margin: 0 0 10px;
+    .badge-json { left: 72px; bottom: 70px; }
+    .badge-tw { right: 132px; top: 118px; }
+
+    .mini-board {
+      position: relative;
+      z-index: 1;
+      width: min(310px, 100%);
+      margin: 118px auto 0;
+      border: 1px solid rgba(137, 156, 205, 0.22);
+      border-radius: 20px;
+      padding: 18px;
+      background: rgba(255, 253, 252, 0.72);
+      backdrop-filter: blur(10px);
+    }
+
+    .mini-board strong {
+      display: block;
+      margin-bottom: 12px;
       font-size: 1rem;
     }
 
-    .policy p {
+    .mini-board p {
       margin: 0;
-      color: var(--muted);
+      color: var(--home-muted);
+      font-size: 0.9rem;
+      line-height: 1.72;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .tool-card {
+      min-height: 292px;
+      display: grid;
+      align-content: space-between;
+      gap: 20px;
+      padding: 20px;
+      border: 1px solid var(--home-line);
+      border-radius: 20px;
+      background: var(--home-card-solid);
+      box-shadow: 0 12px 28px rgba(81, 101, 142, 0.08);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(147, 197, 232, 0.76);
+      box-shadow: 0 18px 38px rgba(81, 101, 142, 0.15);
+    }
+
+    .tool-card[data-tone="lavender"]:hover { border-color: rgba(207, 194, 239, 0.82); }
+    .tool-card[data-tone="mint"]:hover { border-color: rgba(175, 216, 202, 0.82); }
+    .tool-card[data-tone="peach"]:hover { border-color: rgba(233, 184, 169, 0.82); }
+
+    .tool-kicker {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      color: var(--home-muted);
+      font-family: var(--home-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .tool-index {
+      display: inline-grid;
+      place-items: center;
+      min-width: 30px;
+      height: 26px;
+      border-radius: 9px;
+      background: #e8f6ff;
+      color: var(--home-blue-dark);
+      font-weight: 800;
+    }
+
+    .tool-card h2 {
+      margin: 18px 0 10px;
+      font-size: 1.42rem;
+      line-height: 1.2;
+    }
+
+    .tool-card p {
+      margin: 0;
+      color: var(--home-muted);
       line-height: 1.7;
       font-size: 0.92rem;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 17px;
+    }
+
+    .open {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      border-radius: 999px;
+      padding: 11px 13px;
+      background: linear-gradient(135deg, #6ea6cf, #8b79bd);
+      color: #fff;
+      font-weight: 800;
+      box-shadow: 0 10px 22px rgba(81, 101, 142, 0.14);
+    }
+
+    .open span {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.86);
+      color: var(--home-lavender-dark);
+      font-family: var(--home-mono);
+    }
+
+    .safety-panel {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .safety-panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+    }
+
+    .safety-panel p {
+      margin: 0;
+      color: var(--home-muted);
+      line-height: 1.72;
+      font-size: 0.93rem;
     }
 
     .rules {
@@ -131,9 +376,9 @@
       gap: 10px;
       align-items: start;
       padding: 12px;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(137, 156, 205, 0.22);
       border-radius: 16px;
-      background: var(--panel-2);
+      background: rgba(244, 248, 255, 0.78);
     }
 
     .rule b {
@@ -142,148 +387,26 @@
       display: grid;
       place-items: center;
       border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent-dark), #7e6da8);
-      color: #fff;
-      font-family: var(--mono);
+      background: #e8f6ff;
+      color: var(--home-blue-dark);
+      font-family: var(--home-mono);
       font-size: 0.74rem;
     }
 
     .rule span {
-      color: var(--muted);
+      color: var(--home-muted);
       font-size: 0.88rem;
-      line-height: 1.55;
+      line-height: 1.58;
     }
 
-    .tools {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 18px;
-    }
-
-    .tool-card {
-      min-height: 330px;
-      display: grid;
-      align-content: space-between;
-      gap: 22px;
-      padding: 22px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--panel);
-      box-shadow: 0 10px 28px rgba(67, 56, 101, 0.08);
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    }
-
-    .tool-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent);
-      box-shadow: 0 18px 42px rgba(84, 125, 168, 0.2);
-    }
-
-    .tool-kicker {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 0.74rem;
-      text-transform: uppercase;
-    }
-
-    .tool-index {
-      color: var(--accent-dark);
-    }
-
-    .tool-card h2 {
-      margin: 18px 0 10px;
-      font-size: 1.55rem;
-      line-height: 1.18;
-    }
-
-    .tool-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-      font-size: 0.94rem;
-    }
-
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 18px;
-    }
-
-    .tag {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 5px 9px;
-      color: var(--muted);
-      background: #fbfdf9;
-      font-size: 0.78rem;
-    }
-
-    .open {
-      display: inline-flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      width: 100%;
-      border-radius: 999px;
-      padding: 12px 14px;
-      background: linear-gradient(135deg, var(--accent-dark), #7e6da8);
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .open span {
-      width: 24px;
-      height: 24px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      background: #fff4d8;
-      color: #7e6da8;
-      font-family: var(--mono);
-    }
-
-    .note-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 16px;
-      align-items: center;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px 18px;
-      background: rgba(255, 255, 255, 0.82);
-      color: var(--muted);
-      line-height: 1.65;
-    }
-
-    .note-row strong {
-      color: var(--ink);
-    }
-
-    .text-link {
-      color: var(--accent-dark);
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 900px) {
+    @media (max-width: 1020px) {
       .hero,
-      .tools,
-      .note-row {
+      .safety-panel {
         grid-template-columns: 1fr;
       }
 
-      .intro {
-        padding: 24px;
-      }
-
-      .tool-card {
-        min-height: auto;
+      .tools {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
@@ -293,6 +416,27 @@
         padding-top: 18px;
       }
 
+      .tools {
+        grid-template-columns: 1fr;
+      }
+
+      .intro,
+      .sky-card,
+      .safety-panel {
+        border-radius: 18px;
+      }
+
+      .sky-card {
+        min-height: 260px;
+      }
+
+      .mini-board {
+        margin-top: 96px;
+      }
+
+      .badge-tw {
+        right: 42px;
+      }
     }
   </style>
   <link rel="stylesheet" href="assets/toolbox-theme.css">
@@ -302,46 +446,37 @@
   <div class="shell">
     <section class="hero" aria-labelledby="main-title">
       <div class="intro">
-        <div class="eyebrow">S2TW WORKBENCH</div>
-        <h1 id="main-title">把簡中酒館內容轉成繁中玩家能安心使用的格式。</h1>
+        <div class="eyebrow">空藍雲朵工具箱</div>
+        <h1 id="main-title">把酒館檔案整理成溫柔好讀的繁中版本</h1>
         <p class="lead">
-          這個倉庫專門處理 SillyTavern 預設、世界書與角色卡。每個工具都先拆區塊預覽，再讓你編輯文字與匯出 JSON，避免整份檔案盲轉後才發現格式壞掉。
+          這裡專門協助繁體中文玩家處理 SillyTavern 預設、世界書、角色卡與正則腳本。先拆區塊預覽，再編輯安全文字欄位，最後匯出 JSON，讓轉換過程比較安心。
         </p>
+        <div class="quick-tags" aria-label="工具特色">
+          <span>本機解析，不上傳</span>
+          <span>正則與腳本保守處理</span>
+          <span>可視化檢查再匯出</span>
+        </div>
       </div>
 
-      <aside class="policy" aria-label="安全轉換規則">
-        <div>
-          <h2>安全轉換規則</h2>
-          <p>OpenCC 負責簡繁字形，詞庫只處理保守的台灣用語；容易誤傷 JSON、英文縮寫、程式碼或美化規則的詞條已移除。</p>
+      <div class="sky-card" aria-label="空藍雲朵裝飾">
+        <span class="cloud cloud-one"></span>
+        <span class="cloud cloud-two"></span>
+        <span class="cloud cloud-three"></span>
+        <span class="float-badge badge-json">JSON</span>
+        <span class="float-badge badge-tw">TW</span>
+        <div class="mini-board">
+          <strong>轉換前先看清楚</strong>
+          <p>把複雜檔案拆成可以閱讀的小區塊，適合逐段修字、確認欄位，再下載整理好的繁中版本。</p>
         </div>
-        <div class="rules">
-          <div class="rule"><b>01</b><span>正則 <code>findRegex</code> 與 <code>replaceString</code> 預設不做簡繁替換。</span></div>
-          <div class="rule"><b>02</b><span>酒館助手 JavaScript 只給你預覽與編輯，不自動轉換程式碼內容。</span></div>
-          <div class="rule"><b>03</b><span>角色卡與世界書會保留原本 JSON 結構，只改安全文字欄位。</span></div>
-        </div>
-      </aside>
+      </div>
     </section>
 
     <main class="tools" aria-label="工具入口">
-      <a class="tool-card" href="worldinfo-viewer.html">
+      <a class="tool-card" href="preset-viewer.html" data-tone="blue">
         <span>
-          <span class="tool-kicker"><span>World Info</span><span class="tool-index">01</span></span>
-          <h2>世界書</h2>
-          <p>上傳 World Info JSON，依條目檢查 comment、key、content、插入位置與啟用狀態。適合把世界觀設定逐條轉成台灣繁中。</p>
-          <span class="tags">
-            <span class="tag">entries</span>
-            <span class="tag">comment / content</span>
-            <span class="tag">keys</span>
-          </span>
-        </span>
-        <span class="open">開啟世界書工具 <span>→</span></span>
-      </a>
-
-      <a class="tool-card" href="preset-viewer.html">
-        <span>
-          <span class="tool-kicker"><span>Preset</span><span class="tool-index">02</span></span>
+          <span class="tool-kicker"><span>Preset</span><span class="tool-index">01</span></span>
           <h2>預設</h2>
-          <p>預覽 SillyTavern 預設詞，照 prompt_order 呈現提詞順序，能編輯 prompt 內容並安全轉繁；正則區會保留原文。</p>
+          <p>預覽 SillyTavern 預設詞，照 prompt_order 呈現提詞順序，能編輯 prompt 內容並安全轉繁。</p>
           <span class="tags">
             <span class="tag">prompts</span>
             <span class="tag">prompt_order</span>
@@ -351,11 +486,25 @@
         <span class="open">開啟預設工具 <span>→</span></span>
       </a>
 
-      <a class="tool-card" href="character-card-viewer.html">
+      <a class="tool-card" href="worldinfo-viewer.html" data-tone="mint">
+        <span>
+          <span class="tool-kicker"><span>World Info</span><span class="tool-index">02</span></span>
+          <h2>世界書</h2>
+          <p>上傳 World Info JSON，依條目檢查 comment、key、content、插入位置與啟用狀態。</p>
+          <span class="tags">
+            <span class="tag">entries</span>
+            <span class="tag">comment / content</span>
+            <span class="tag">keys</span>
+          </span>
+        </span>
+        <span class="open">開啟世界書工具 <span>→</span></span>
+      </a>
+
+      <a class="tool-card" href="character-card-viewer.html" data-tone="lavender">
         <span>
           <span class="tool-kicker"><span>Character Card</span><span class="tool-index">03</span></span>
           <h2>角色卡</h2>
-          <p>面向 chara_card_v3 / MVU 全包卡，拆成角色卡、世界書、正則與酒館助手腳本。可視化編輯文字內容後再匯出。</p>
+          <p>面向 chara_card_v3 / MVU 全包卡，拆成角色卡、世界書、正則與酒館助手腳本。</p>
           <span class="tags">
             <span class="tag">chara_card_v3</span>
             <span class="tag">MVU</span>
@@ -364,11 +513,32 @@
         </span>
         <span class="open">開啟角色卡工具 <span>→</span></span>
       </a>
+
+      <a class="tool-card" href="regex-viewer.html" data-tone="peach">
+        <span>
+          <span class="tool-kicker"><span>Regex</span><span class="tool-index">04</span></span>
+          <h2>正則</h2>
+          <p>單獨預覽 Regex Script JSON。適合檢查 findRegex、replaceString 與啟用條件，避免美化規則被盲轉破壞。</p>
+          <span class="tags">
+            <span class="tag">findRegex protected</span>
+            <span class="tag">replaceString edit</span>
+            <span class="tag">scriptName</span>
+          </span>
+        </span>
+        <span class="open">開啟正則工具 <span>→</span></span>
+      </a>
     </main>
 
-    <section class="note-row">
-      <span><strong>正則怎麼辦？</strong> 正則很常包含語法、HTML、CSS、JS 或美化輸出，盲轉容易壞。需要單獨檢查時可以開舊的正則檢視頁，但自動轉繁會避開它。</span>
-      <a class="text-link" href="regex-viewer.html">正則檢視器</a>
+    <section class="safety-panel" aria-label="安全轉換規則">
+      <div>
+        <h2>安全轉換規則</h2>
+        <p>OpenCC 負責簡繁字形，詞庫只保留保守的台灣用語；容易誤傷 JSON、英文縮寫、程式碼或美化規則的詞條會避開。</p>
+      </div>
+      <div class="rules">
+        <div class="rule"><b>01</b><span>預設與角色卡裡的正則區預設略過，不會整包盲轉。</span></div>
+        <div class="rule"><b>02</b><span>酒館助手 JavaScript 只給你預覽與編輯，不自動轉換程式碼內容。</span></div>
+        <div class="rule"><b>03</b><span>角色卡與世界書會保留原本 JSON 結構，只改安全文字欄位。</span></div>
+      </div>
     </section>
   </div>
 </body>

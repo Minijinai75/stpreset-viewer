@@ -1,44 +1,84 @@
 :root {
-  --tool-bg: #f6f3fb;
-  --tool-ink: #2c2940;
-  --tool-muted: #706d86;
-  --tool-line: #dcd5ec;
-  --tool-panel: rgba(255, 253, 252, 0.9);
+  --tool-bg: #edf8fc;
+  --tool-ink: #2f334a;
+  --tool-muted: #6d718d;
+  --tool-line: #d6def3;
+  --tool-panel: rgba(255, 253, 252, 0.88);
   --tool-panel-solid: #fffdfc;
-  --tool-panel-soft: #eef3fb;
-  --tool-blue: #8db7dd;
-  --tool-blue-dark: #547da8;
-  --tool-lavender: #c7b8e6;
-  --tool-lavender-dark: #7e6da8;
-  --tool-mint: #a9cdbb;
-  --tool-peach: #e6b39f;
-  --tool-cream: #fff4d8;
-  --tool-danger: #a85d6d;
-  --tool-shadow: 0 18px 42px rgba(67, 56, 101, 0.14);
+  --tool-panel-soft: #f4f8ff;
+  --tool-blue: #93c5e8;
+  --tool-blue-dark: #5d89b5;
+  --tool-lavender: #cfc2ef;
+  --tool-lavender-dark: #8171af;
+  --tool-mint: #afd8ca;
+  --tool-peach: #e9b8a9;
+  --tool-cream: #fff3d4;
+  --tool-danger: #b46677;
+  --tool-shadow: 0 18px 42px rgba(81, 101, 142, 0.13);
   --tool-mono: "Fira Code", "Cascadia Code", Consolas, monospace;
   --tool-sans: "Noto Sans TC", "Yu Gothic UI", "Microsoft JhengHei", system-ui, sans-serif;
 }
 
 body.toolbox-page {
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden;
   background:
-    radial-gradient(circle at 12% 6%, rgba(199, 184, 230, 0.38), transparent 24rem),
-    radial-gradient(circle at 88% 12%, rgba(141, 183, 221, 0.34), transparent 28rem),
-    radial-gradient(circle at 72% 92%, rgba(230, 179, 159, 0.2), transparent 26rem),
-    linear-gradient(90deg, rgba(126, 109, 168, 0.07) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(84, 125, 168, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at 12% 12%, rgba(207, 194, 239, 0.32), transparent 23rem),
+    radial-gradient(circle at 88% 10%, rgba(147, 197, 232, 0.34), transparent 26rem),
+    radial-gradient(circle at 72% 90%, rgba(175, 216, 202, 0.22), transparent 25rem),
+    linear-gradient(180deg, #f8fbff 0%, #edf8fc 48%, #f7f3ff 100%),
     var(--tool-bg) !important;
-  background-size: auto, auto, auto, 44px 44px, 44px 44px, auto !important;
+  background-size: auto !important;
   color: var(--tool-ink) !important;
   font-family: var(--tool-sans) !important;
+}
+
+body.toolbox-page::before,
+body.toolbox-page::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  filter: blur(0.2px);
+}
+
+body.toolbox-page::before {
+  width: 220px;
+  height: 74px;
+  top: 138px;
+  left: -82px;
+  box-shadow:
+    58px -24px 0 8px rgba(255, 255, 255, 0.52),
+    118px 2px 0 15px rgba(255, 255, 255, 0.42),
+    72px 36px 0 -2px rgba(207, 194, 239, 0.18);
+}
+
+body.toolbox-page::after {
+  width: 260px;
+  height: 88px;
+  right: -92px;
+  bottom: 84px;
+  box-shadow:
+    -70px -26px 0 12px rgba(255, 255, 255, 0.48),
+    -132px 16px 0 8px rgba(255, 255, 255, 0.34),
+    -78px 42px 0 -2px rgba(147, 197, 232, 0.2);
+}
+
+body.toolbox-page > * {
+  position: relative;
+  z-index: 1;
 }
 
 .toolbox-nav {
   position: sticky;
   top: 0;
-  z-index: 9000;
-  border-bottom: 1px solid rgba(126, 109, 168, 0.22);
-  background: rgba(246, 243, 251, 0.82);
-  backdrop-filter: blur(18px) saturate(1.14);
+  z-index: 9000 !important;
+  border-bottom: 1px solid rgba(137, 156, 205, 0.18);
+  background: rgba(248, 251, 255, 0.78);
+  backdrop-filter: blur(18px) saturate(1.1);
 }
 
 .toolbox-nav-inner {
@@ -64,6 +104,7 @@ body.toolbox-page {
   display: block;
   font-size: 0.96rem;
   line-height: 1.22;
+  letter-spacing: 0.02em;
 }
 
 .toolbox-brand-copy span {
@@ -87,15 +128,15 @@ body.toolbox-page {
   align-items: center;
   justify-content: center;
   min-height: 36px;
-  border: 1px solid rgba(126, 109, 168, 0.24);
+  border: 1px solid rgba(137, 156, 205, 0.24);
   border-radius: 999px;
   padding: 8px 13px;
-  background: rgba(255, 253, 252, 0.72);
+  background: rgba(255, 253, 252, 0.76);
   color: var(--tool-muted);
   text-decoration: none;
   font-weight: 800;
   font-size: 0.84rem;
-  box-shadow: 0 7px 16px rgba(67, 56, 101, 0.06);
+  box-shadow: 0 8px 18px rgba(81, 101, 142, 0.07);
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
@@ -107,9 +148,12 @@ body.toolbox-page {
 }
 
 .toolbox-link.active {
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--tool-blue-dark), var(--tool-lavender-dark));
-  color: #fff;
+  border-color: rgba(137, 156, 205, 0.38);
+  background: #fffdfc;
+  color: var(--tool-blue-dark);
+  box-shadow:
+    inset 0 0 0 2px rgba(147, 197, 232, 0.32),
+    0 10px 22px rgba(81, 101, 142, 0.12);
 }
 
 .toolbox-page-note {
@@ -119,11 +163,11 @@ body.toolbox-page {
   justify-content: space-between;
   gap: 12px;
   align-items: center;
-  border: 1px solid rgba(126, 109, 168, 0.22);
+  border: 1px solid rgba(137, 156, 205, 0.22);
   border-radius: 14px;
   padding: 12px 15px;
-  background: rgba(255, 253, 252, 0.78);
-  box-shadow: 0 10px 24px rgba(67, 56, 101, 0.08);
+  background: rgba(255, 253, 252, 0.72);
+  box-shadow: 0 10px 24px rgba(81, 101, 142, 0.08);
   color: var(--tool-muted);
   font-size: 0.88rem;
   line-height: 1.58;
@@ -136,7 +180,7 @@ body.toolbox-page {
 .toolbox-note-chip {
   border-radius: 999px;
   padding: 7px 11px;
-  background: linear-gradient(135deg, var(--tool-cream), #efe2ff);
+  background: linear-gradient(135deg, #e8f6ff, #f3ebff);
   color: var(--tool-lavender-dark);
   font: 800 0.72rem/1 var(--tool-mono);
   white-space: nowrap;
@@ -146,7 +190,7 @@ body.toolbox-page {
   width: min(1180px, calc(100% - 28px));
   margin: 28px auto 34px;
   padding: 18px 16px;
-  border-top: 1px solid rgba(126, 109, 168, 0.22);
+  border-top: 1px solid rgba(137, 156, 205, 0.22);
   color: var(--tool-muted);
   text-align: center;
   font-size: 0.86rem;
@@ -170,18 +214,24 @@ body.toolbox-page .upload-section,
 body.toolbox-page .instruction-box,
 body.toolbox-page .preview-container,
 body.toolbox-page .stat-card,
+body.toolbox-page .stat-item,
 body.toolbox-page .edit-mode-bar,
 body.toolbox-page .metric,
 body.toolbox-page .item,
-body.toolbox-page .entry-item {
+body.toolbox-page .entry-item,
+body.toolbox-page .entry-manager,
+body.toolbox-page .code-block,
+body.toolbox-page .meta-chip {
   border-radius: 14px !important;
-  border-color: rgba(126, 109, 168, 0.22) !important;
+  border-color: rgba(137, 156, 205, 0.22) !important;
   box-shadow: var(--tool-shadow);
 }
 
 body.toolbox-page .container > header:first-child {
   padding: 1.8rem;
-  background: var(--tool-panel);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(242, 248, 255, 0.72)),
+    var(--tool-panel);
   border: 1px solid var(--tool-line);
   text-align: left;
 }
@@ -202,7 +252,7 @@ body.toolbox-page .footer-note {
 
 body.toolbox-page .upload-section {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(238, 243, 251, 0.7)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(232, 246, 255, 0.66)),
     var(--tool-panel-solid) !important;
   border-width: 1px !important;
 }
@@ -217,7 +267,7 @@ body.toolbox-page .btn-info,
 body.toolbox-page .btn-success,
 body.toolbox-page .btn-warning,
 body.toolbox-page button.primary {
-  background: linear-gradient(135deg, var(--tool-blue-dark), var(--tool-lavender-dark)) !important;
+  background: linear-gradient(135deg, #6ea6cf, #8b79bd) !important;
   border-color: transparent !important;
   color: #fff !important;
 }
@@ -226,7 +276,7 @@ body.toolbox-page .btn-info:hover,
 body.toolbox-page .btn-success:hover,
 body.toolbox-page .btn-warning:hover,
 body.toolbox-page button.primary:hover {
-  background: linear-gradient(135deg, #496f9b, #725f9c) !important;
+  background: linear-gradient(135deg, #5f96c0, #7b69ad) !important;
 }
 
 body.toolbox-page .edit-mode-bar,
@@ -234,22 +284,28 @@ body.toolbox-page .panel,
 body.toolbox-page .section,
 body.toolbox-page .metric,
 body.toolbox-page .item,
-body.toolbox-page .entry-item {
+body.toolbox-page .entry-item,
+body.toolbox-page .stat-item,
+body.toolbox-page .entry-manager,
+body.toolbox-page .code-block,
+body.toolbox-page .meta-chip {
   background: var(--tool-panel-solid) !important;
 }
 
 body.toolbox-page .section-title,
 body.toolbox-page .panel-head,
-body.toolbox-page .entry-header {
-  background: linear-gradient(90deg, rgba(238, 243, 251, 0.92), rgba(245, 237, 255, 0.92)) !important;
-  border-color: rgba(126, 109, 168, 0.22) !important;
+body.toolbox-page .entry-header,
+body.toolbox-page .entry-manager-header,
+body.toolbox-page .entry-list-header {
+  background: linear-gradient(90deg, rgba(232, 246, 255, 0.92), rgba(245, 237, 255, 0.92)) !important;
+  border-color: rgba(137, 156, 205, 0.22) !important;
 }
 
 body.toolbox-page textarea,
 body.toolbox-page input,
 body.toolbox-page select,
 body.toolbox-page pre {
-  border-color: rgba(126, 109, 168, 0.24) !important;
+  border-color: rgba(137, 156, 205, 0.24) !important;
   background-color: #fffdfc !important;
 }
 
@@ -271,7 +327,25 @@ body.toolbox-page .tab.active {
 
 body.toolbox-page .badge,
 body.toolbox-page .tag {
-  border-color: rgba(126, 109, 168, 0.22) !important;
+  border-color: rgba(137, 156, 205, 0.22) !important;
+}
+
+body.toolbox-page .preset-type {
+  background: #e8f6ff !important;
+  color: var(--tool-blue-dark) !important;
+  border: 1px solid rgba(147, 197, 232, 0.48) !important;
+}
+
+body.toolbox-page .upload-icon,
+body.toolbox-page header h1 i,
+body.toolbox-page .entry-manager-title i,
+body.toolbox-page .section-title h3 i {
+  color: var(--tool-blue-dark) !important;
+}
+
+body.toolbox-page .toast {
+  border-radius: 999px !important;
+  box-shadow: 0 16px 30px rgba(81, 101, 142, 0.2) !important;
 }
 
 body.toolbox-page code {
