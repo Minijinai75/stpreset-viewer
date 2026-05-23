@@ -24,34 +24,37 @@
     <script src="lib/taiwan-vocabs.js"></script>
     <style>
         :root {
-            --bg-primary: #F4F3EE;
-            --bg-secondary: #E8E6DF;
-            --bg-card: #FFFFFF;
-            --text-primary: #463F3A;
-            --text-secondary: #8A817C;
-            --text-muted: #BCB8B1;
-            --accent: #85BFD2;
-            --accent-dark: #5A9BB5;
-            --accent-light: #A8D5E5;
-            --border: #D5D0C7;
-            --success: #67c23a;
-            --warning: #E09F3E;
-            --danger: #E76F51;
-            --info: #6A89CC;
-            --constant-color: #9B59B6;
-            --disabled-color: #95A5A6;
-            --selective-color: #E67E22;
-            --position-before: #3498DB;
-            --position-after: #2ECC71;
-            --position-depth: #E74C3C;
-            --position-author: #9B59B6;
+            --bg-primary: #F6F3FB;
+            --bg-secondary: #EEF3FB;
+            --bg-card: #FFFDFC;
+            --text-primary: #2C2940;
+            --text-secondary: #706D86;
+            --text-muted: #A49AB8;
+            --accent: #8DB7DD;
+            --accent-dark: #547DA8;
+            --accent-light: #D8E8F7;
+            --border: #DCD5EC;
+            --success: #A9CDBB;
+            --warning: #E6B39F;
+            --danger: #A85D6D;
+            --info: #7E6DA8;
+            --constant-color: #7E6DA8;
+            --disabled-color: #A49AB8;
+            --selective-color: #E6B39F;
+            --position-before: #8DB7DD;
+            --position-after: #A9CDBB;
+            --position-depth: #A85D6D;
+            --position-author: #C7B8E6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
-            background: var(--bg-primary);
+            background:
+                radial-gradient(circle at 12% 6%, rgba(199, 184, 230, 0.38), transparent 24rem),
+                radial-gradient(circle at 88% 12%, rgba(141, 183, 221, 0.34), transparent 28rem),
+                var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
         }
@@ -481,7 +484,7 @@
         .entry-content-editor {
             width: 100%;
             min-height: 150px;
-            background: #ffffff;
+            background: #fffdfc;
             color: var(--text-primary);
             border: 1px solid var(--accent);
             border-radius: 8px;
@@ -596,7 +599,7 @@
     <link rel="stylesheet" href="assets/toolbox-theme.css">
     <script defer src="assets/toolbox-nav.js"></script>
 </head>
-<body>
+<body class="toolbox-page">
     <div class="container">
         <header>
             <h1><i class="fa-solid fa-globe"></i> SillyTavern 世界書預覽器</h1>

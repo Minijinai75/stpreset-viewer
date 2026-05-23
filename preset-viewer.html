@@ -33,29 +33,32 @@
         }
 
         :root {
-            --SmartThemeBodyColor: #646266;
-            --SmartThemeBorderColor: #8e8d90;
-            --SmartThemeBlurTintColor: #ffffff;
-            --SmartThemeQuoteColor: #8e8d90;
-            --SmartThemeChatTintColor: #f7fbfc;
-            --white30a: rgba(100, 98, 102, 0.1);
-            --white20a: rgba(100, 98, 102, 0.05);
-            --white50a: rgba(100, 98, 102, 0.2);
-            --accent: #85bfd2;
-            --accent-light: #a8dbec;
-            --accent-dark: #396c7c;
-            --marker-color: #396c7c;
-            --global-color: #85bfd2;
-            --important-color: #8e8d90;
-            --preset-color: #a8dbec;
-            --injection-color: #646266;
-            --success: #85bfd2;
-            --warning: #8e8d90;
+            --SmartThemeBodyColor: #706d86;
+            --SmartThemeBorderColor: #dcd5ec;
+            --SmartThemeBlurTintColor: #fffdfc;
+            --SmartThemeQuoteColor: #b8a9d6;
+            --SmartThemeChatTintColor: #f6f3fb;
+            --white30a: rgba(126, 109, 168, 0.1);
+            --white20a: rgba(84, 125, 168, 0.06);
+            --white50a: rgba(126, 109, 168, 0.2);
+            --accent: #8db7dd;
+            --accent-light: #d8e8f7;
+            --accent-dark: #547da8;
+            --marker-color: #7e6da8;
+            --global-color: #8db7dd;
+            --important-color: #b8a9d6;
+            --preset-color: #c7b8e6;
+            --injection-color: #706d86;
+            --success: #8db7dd;
+            --warning: #e6b39f;
         }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: #ffffff;
+            background:
+                radial-gradient(circle at 12% 6%, rgba(199, 184, 230, 0.38), transparent 24rem),
+                radial-gradient(circle at 88% 12%, rgba(141, 183, 221, 0.34), transparent 28rem),
+                #f6f3fb;
             background-attachment: fixed;
             color: var(--SmartThemeBodyColor);
             min-height: 100vh;
@@ -74,33 +77,33 @@
         header {
             text-align: center;
             padding: 2.5rem 2rem;
-            background: #a8dbec;
+            background: linear-gradient(135deg, #d8e8f7, #efe2ff);
             border-radius: 24px;
             border: none;
             box-shadow: none;
             position: relative;
             overflow: hidden;
             margin-bottom: 0.5rem;
-            color: #396c7c;
+            color: #547da8;
         }
 
         h1 {
             font-size: 2.2rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
-            color: #396c7c;
+            color: #547da8;
             text-shadow: none;
         }
 
         .subtitle {
-            color: #646266;
+            color: #706d86;
             font-size: 1.1rem;
             font-weight: 500;
             opacity: 0.9;
         }
 
         .instruction-box {
-            background: #ffffff;
+            background: #fffdfc;
             border-left: 4px solid var(--accent);
             border-radius: 12px;
             padding: 1.25rem 1.5rem;
@@ -108,13 +111,13 @@
             max-width: 700px;
             text-align: left;
             font-size: 0.95rem;
-            color: #646266;
+            color: #706d86;
             line-height: 1.6;
             box-shadow: 0 4px 12px rgba(133, 191, 210, 0.15);
         }
         
         .instruction-box h3 {
-            color: #396c7c;
+            color: #547da8;
             margin-bottom: 0.75rem;
             font-size: 1.1rem;
             display: flex;
@@ -132,19 +135,19 @@
 
         /* Upload Section */
         .upload-section {
-            background: #ffffff;
+            background: #fffdfc;
             border-radius: 24px;
             padding: 2.5rem 2rem;
             margin-bottom: 1.5rem;
-            border: 2px dashed #85bfd2;
+            border: 2px dashed #8db7dd;
             text-align: center;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(133, 191, 210, 0.1);
         }
 
         .upload-section:hover, .upload-section.drag-over {
-            border-color: #396c7c;
-            background: #f7fbfc;
+            border-color: #547da8;
+            background: #f6f3fb;
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(133, 191, 210, 0.2);
         }
@@ -159,7 +162,7 @@
 
         .btn {
             background-color: var(--accent);
-            color: #ffffff;
+            color: #fffdfc;
             padding: 0.75rem 1.75rem;
             border: none;
             border-radius: 12px;
@@ -180,7 +183,7 @@
 
         .btn-secondary {
             background-color: var(--important-color);
-            color: #ffffff;
+            color: #fffdfc;
             margin-left: 0.75rem;
         }
         
@@ -204,13 +207,13 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .preset-name {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .preset-type {
@@ -231,8 +234,8 @@
         }
 
         .stat-item {
-            background: #ffffff;
-            border: 1px solid #e0e0e0;
+            background: #fffdfc;
+            border: 1px solid #dcd5ec;
             border-radius: 12px;
             padding: 0.75rem 1rem;
             display: flex;
@@ -254,9 +257,9 @@
 
         /* Prompt Manager Style */
         .prompt-manager {
-            background: #ffffff;
+            background: #fffdfc;
             border-radius: 16px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #dcd5ec;
             margin-bottom: 1rem;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
@@ -273,7 +276,7 @@
 
         .prompt-manager-title {
             font-weight: 600;
-            color: #ffffff;
+            color: #fffdfc;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -294,7 +297,7 @@
             padding: 0.5rem 1rem;
             background: var(--important-color);
             border-bottom: none;
-            color: #ffffff;
+            color: #fffdfc;
             font-size: 0.8rem;
             font-weight: 600;
         }
@@ -312,12 +315,12 @@
             border-bottom: 1px solid #f0f0f0;
             transition: background 0.2s ease;
             cursor: pointer;
-            background: #ffffff;
+            background: #fffdfc;
             color: var(--injection-color);
         }
 
         .prompt-item:hover {
-            background: #f7fbfc;
+            background: #f6f3fb;
         }
 
         .prompt-item:last-child {
@@ -329,7 +332,7 @@
         }
 
         .prompt-item.expanded {
-            background: #f7fbfc;
+            background: #f6f3fb;
         }
 
         .prompt-drag-handle {
@@ -423,15 +426,15 @@
         }
 
         .prompt-delete-btn:hover {
-            color: #E76F51;
-            border-color: #E76F51;
+            color: #A85D6D;
+            border-color: #A85D6D;
             background: rgba(231, 111, 81, 0.08);
         }
 
         .prompt-delete-btn.pending {
             color: #fff;
-            background: #E76F51;
-            border-color: #E76F51;
+            background: #A85D6D;
+            border-color: #A85D6D;
             font-size: 0.7rem;
             animation: pulse-delete 0.8s ease-in-out infinite alternate;
         }
@@ -454,7 +457,7 @@
             grid-column: 1 / -1;
             margin-top: 0.75rem;
             padding: 1rem;
-            background: #ffffff;
+            background: #fffdfc;
             border-radius: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 0.85rem;
@@ -464,7 +467,7 @@
             max-height: 400px;
             overflow-y: auto;
             line-height: 1.6;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #dcd5ec;
         }
 
         .prompt-item.expanded .prompt-content {
@@ -476,7 +479,7 @@
             gap: 1rem;
             margin-bottom: 0.75rem;
             padding-bottom: 0.75rem;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #dcd5ec;
             font-size: 0.8rem;
         }
 
@@ -498,24 +501,24 @@
         /* Separator */
         .prompt-separator {
             padding: 0.4rem 1rem;
-            background: #f7fbfc;
+            background: #f6f3fb;
             color: var(--important-color);
             font-size: 0.75rem;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #dcd5ec;
         }
 
         .prompt-separator hr {
             border: none;
-            border-top: 1px dashed #e0e0e0;
+            border-top: 1px dashed #dcd5ec;
             margin-top: 0.4rem;
         }
 
         /* Section */
         .section {
-            background: #ffffff;
+            background: #fffdfc;
             border-radius: 16px;
             margin-bottom: 1rem;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #dcd5ec;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
@@ -528,7 +531,7 @@
             background: var(--injection-color);
             cursor: pointer;
             user-select: none;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #dcd5ec;
         }
 
         .section-title:hover {
@@ -538,14 +541,14 @@
         .section-title h3 {
             font-size: 1rem;
             font-weight: 600;
-            color: #ffffff;
+            color: #fffdfc;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
         .section-toggle {
-            color: #ffffff;
+            color: #fffdfc;
             transition: transform 0.2s ease;
         }
 
@@ -555,7 +558,7 @@
 
         .section-content {
             padding: 1rem;
-            background: #ffffff;
+            background: #fffdfc;
         }
 
         .section.collapsed .section-content {
@@ -570,7 +573,7 @@
         }
 
         .regex-item {
-            background: #f7fbfc;
+            background: #f6f3fb;
             border-radius: 8px;
             padding: 1rem;
             border-left: 3px solid var(--accent);
@@ -612,14 +615,14 @@
         }
 
         .regex-pattern {
-            background: #ffffff;
+            background: #fffdfc;
             padding: 0.5rem;
             border-radius: 6px;
             font-family: 'Consolas', monospace;
             font-size: 0.8rem;
             margin-top: 0.5rem;
             word-break: break-all;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #dcd5ec;
             color: var(--injection-color);
         }
 
@@ -631,10 +634,10 @@
         }
 
         .field {
-            background: #f7fbfc;
+            background: #f6f3fb;
             border-radius: 8px;
             padding: 0.75rem;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #dcd5ec;
         }
 
         .field-label {
@@ -657,12 +660,12 @@
 
         /* JSON Explorer */
         .json-explorer {
-            background: #f7fbfc;
+            background: #f6f3fb;
             border-radius: 8px;
             padding: 1rem;
             max-height: 500px;
             overflow: auto;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #dcd5ec;
             color: var(--injection-color);
         }
 
@@ -677,7 +680,7 @@
         /* Error */
         .error-message {
             background: #e74c3c;
-            color: #ffffff;
+            color: #fffdfc;
             padding: 1rem;
             border-radius: 12px;
             margin-bottom: 1rem;
@@ -723,7 +726,7 @@
             text-align: center;
             padding: 1.5rem;
             margin-top: 3rem;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid #dcd5ec;
             color: var(--important-color);
             font-size: 0.85rem;
         }
@@ -745,11 +748,11 @@
 
         /* Edit Mode */
         .edit-mode-bar {
-            background: #ffffff;
+            background: #fffdfc;
             border-radius: 16px;
             padding: 1rem;
             margin-bottom: 1rem;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #dcd5ec;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -777,38 +780,38 @@
 
         .btn-success {
             background: var(--accent-light);
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .btn-success:hover {
             background: var(--accent);
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .btn-warning {
             background: var(--warning);
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .btn-warning:hover {
             background: var(--injection-color);
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .btn-info {
             background: var(--accent);
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .btn-info:hover {
             background: var(--accent-dark);
-            color: #ffffff;
+            color: #fffdfc;
         }
 
         .prompt-content-editor {
             width: 100%;
             min-height: 150px;
-            background: #ffffff;
+            background: #fffdfc;
             color: var(--injection-color);
             border: 1px solid var(--accent);
             border-radius: 8px;
@@ -833,7 +836,7 @@
 
         .field-input {
             width: 100%;
-            background: #ffffff;
+            background: #fffdfc;
             color: var(--injection-color);
             border: 1px solid var(--accent);
             border-radius: 8px;
@@ -858,7 +861,7 @@
     <link rel="stylesheet" href="assets/toolbox-theme.css">
     <script defer src="assets/toolbox-nav.js"></script>
 </head>
-<body>
+<body class="toolbox-page">
     <div class="container">
         <header>
             <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 預設詞預覽器</h1>
