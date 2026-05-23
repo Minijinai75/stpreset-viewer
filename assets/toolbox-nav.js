@@ -28,7 +28,6 @@
     nav.innerHTML = `
       <div class="toolbox-nav-inner">
         <a class="toolbox-brand" href="index.html" aria-label="回到工具箱首頁">
-          <span class="toolbox-mark">ST</span>
           <span class="toolbox-brand-copy">
             <strong>SillyTavern 繁中轉換工具箱</strong>
             <span>空色與藤紫的本機 JSON 工作台</span>

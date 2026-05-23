@@ -54,25 +54,10 @@ body.toolbox-page {
 .toolbox-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 230px;
+  gap: 0;
+  min-width: 250px;
   color: var(--tool-ink);
   text-decoration: none;
-}
-
-.toolbox-mark {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(44, 41, 64, 0.18);
-  border-radius: 14px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.62), transparent),
-    linear-gradient(135deg, var(--tool-blue), var(--tool-lavender));
-  box-shadow: 0 10px 20px rgba(84, 125, 168, 0.18);
-  color: #fff;
-  font: 800 0.86rem/1 var(--tool-mono);
 }
 
 .toolbox-brand-copy strong {
