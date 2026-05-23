@@ -72,7 +72,7 @@
     const activeId = currentPageId();
     document.body.classList.add('toolbox-page');
     if (activeId === 'index') document.body.classList.add('toolbox-home');
-    document.body.prepend(createNote(activeId));
+    if (activeId !== 'index') document.body.prepend(createNote(activeId));
     document.body.prepend(createNav(activeId));
     if (!document.querySelector('.toolbox-footer')) document.body.append(createFooter());
   });

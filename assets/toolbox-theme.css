@@ -34,44 +34,6 @@ body.toolbox-page {
   font-family: var(--tool-sans) !important;
 }
 
-body.toolbox-page::before,
-body.toolbox-page::after {
-  content: "";
-  position: fixed;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.55);
-  filter: blur(0.2px);
-}
-
-body.toolbox-page::before {
-  width: 220px;
-  height: 74px;
-  top: 138px;
-  left: -82px;
-  box-shadow:
-    58px -24px 0 8px rgba(255, 255, 255, 0.52),
-    118px 2px 0 15px rgba(255, 255, 255, 0.42),
-    72px 36px 0 -2px rgba(207, 194, 239, 0.18);
-}
-
-body.toolbox-page::after {
-  width: 260px;
-  height: 88px;
-  right: -92px;
-  bottom: 84px;
-  box-shadow:
-    -70px -26px 0 12px rgba(255, 255, 255, 0.48),
-    -132px 16px 0 8px rgba(255, 255, 255, 0.34),
-    -78px 42px 0 -2px rgba(147, 197, 232, 0.2);
-}
-
-body.toolbox-page > * {
-  position: relative;
-  z-index: 1;
-}
-
 .toolbox-nav {
   position: sticky;
   top: 0;
