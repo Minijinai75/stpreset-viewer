@@ -54,11 +54,23 @@
     return note;
   }
 
+  function createFooter() {
+    const footer = document.createElement('footer');
+    footer.className = 'toolbox-footer';
+    footer.innerHTML = `
+      <p>Made with care by Minijinai75</p>
+      <p>© 2026 SillyTavern 繁中轉換工具箱</p>
+      <p>本工具非官方工具，僅協助繁體中文玩家預覽、編輯與安全轉換 SillyTavern相關使用文件。</p>
+    `;
+    return footer;
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const activeId = currentPageId();
     document.body.classList.add('toolbox-page');
     if (activeId === 'index') document.body.classList.add('toolbox-home');
     document.body.prepend(createNote(activeId));
     document.body.prepend(createNav(activeId));
+    if (!document.querySelector('.toolbox-footer')) document.body.append(createFooter());
   });
 })();

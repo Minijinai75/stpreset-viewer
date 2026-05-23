@@ -142,6 +142,21 @@ body.toolbox-page {
   white-space: nowrap;
 }
 
+.toolbox-footer {
+  width: min(1180px, calc(100% - 28px));
+  margin: 28px auto 34px;
+  padding: 18px 16px;
+  border-top: 1px solid rgba(126, 109, 168, 0.22);
+  color: var(--tool-muted);
+  text-align: center;
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.toolbox-footer p {
+  margin: 0.1rem 0;
+}
+
 body.toolbox-page .container {
   max-width: 1180px !important;
   padding-top: 1.25rem !important;
