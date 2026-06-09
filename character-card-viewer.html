@@ -268,6 +268,40 @@
       gap: 0.7rem;
     }
 
+    .greeting-list {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .greeting-item {
+      border-top: 1px solid var(--line);
+      padding-top: 0.75rem;
+    }
+
+    .vocab-report {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .vocab-row {
+      display: grid;
+      grid-template-columns: minmax(9rem, 1.2fr) minmax(0, 1fr) auto;
+      gap: 0.55rem;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding-top: 0.5rem;
+      font-size: 0.86rem;
+    }
+
+    .vocab-row code {
+      font-family: var(--mono);
+      background: #fffdf8;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0.15rem 0.35rem;
+      overflow-wrap: anywhere;
+    }
+
     .item-list {
       display: grid;
       gap: 0.55rem;
@@ -410,6 +444,7 @@
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .field-grid, .split { grid-template-columns: 1fr; }
       .filters { grid-template-columns: 1fr; }
+      .vocab-row { grid-template-columns: 1fr; }
     }
   </style>
   <link rel="stylesheet" href="assets/toolbox-theme.css">
@@ -420,7 +455,7 @@
     <aside>
       <div class="brand">
         <h1>角色卡轉繁預覽器</h1>
-        <p>預覽、編輯與安全轉換 chara_card_v3 全包角色卡。</p>
+        <p>預覽、編輯與安全轉換角色卡。</p>
       </div>
 
       <div id="dropzone" class="dropzone">
@@ -439,7 +474,7 @@
           <button id="copyJson" disabled>複製 JSON</button>
           <button id="resetCard" class="danger" disabled>還原</button>
         </div>
-        <button id="convertTraditional" class="warn" disabled>安全簡→繁</button>
+        <button id="convertTraditional" class="primary" disabled>簡→繁轉換</button>
         <button id="validateCard" class="warn" disabled>檢查格式風險</button>
       </div>
 
@@ -447,18 +482,18 @@
         <button class="tab active" data-view="overview">總覽 <span class="count" id="count-overview">-</span></button>
         <button class="tab" data-view="character">角色卡 <span class="count" id="count-character">-</span></button>
         <button class="tab" data-view="worldbook">世界書 <span class="count" id="count-worldbook">0</span></button>
-        <button class="tab" data-view="regex">正則 <span class="count" id="count-regex">0</span></button>
+        <button class="tab" data-view="regex">正規表示式(正則) <span class="count" id="count-regex">0</span></button>
         <button class="tab" data-view="scripts">酒館助手腳本 <span class="count" id="count-scripts">0</span></button>
         <button class="tab" data-view="raw">原始 JSON <span class="count" id="count-raw">-</span></button>
       </div>
 
       <div class="footer-note">
-        此工具只在瀏覽器本機讀取檔案，不會上傳角色卡內容。安全簡→繁會略過正則與酒館助手 JavaScript，避免破壞語法。
+        此工具只在瀏覽器本機讀取檔案，不會上傳角色卡內容。簡→繁會同步轉換 regex 與酒館助手腳本中的中文文字並保留 JSON 結構；只有世界書會套用詞庫，其餘欄位只用 OpenCC。
       </div>
     </aside>
 
     <main>
-      <div id="message" class="notice">請先載入一份 MVU 全包 JSON。工具會拆成角色卡、世界書、正則、酒館助手腳本四區，方便檢查與修正文案。</div>
+      <div id="message" class="notice">請先將角色卡匯入酒館轉成 JSON 檔後再使用本工具。工具會拆成角色卡、世界書、正規表示式(正則)、酒館助手腳本四區，方便檢查與修正文案。</div>
       <section id="content"></section>
     </main>
   </div>
@@ -471,7 +506,8 @@
       view: "overview",
       query: "",
       changed: new Set(),
-      warnings: []
+      warnings: [],
+      vocabChanges: []
     };
 
     let openccConverter = null;
@@ -660,6 +696,7 @@
       state.original = deepClone(card);
       state.fileName = fileName;
       state.changed.clear();
+      state.vocabChanges = [];
       state.query = "";
       validateCard(false);
       updateControls();
@@ -745,6 +782,28 @@
       `;
     }
 
+    function greetingInputs(path, label, value) {
+      const greetings = Array.isArray(value) ? value : [];
+      const changed = state.changed.has(path) ? '<span class="changed-dot" title="已修改"></span>' : "";
+      return `
+        <div class="field">
+          <label>${escapeHtml(label)}${changed}</label>
+          <div class="greeting-list">
+            ${greetings.length
+              ? greetings.map((greeting, index) => `
+              <div class="greeting-item">
+                <div class="field">
+                <label>${escapeHtml(label)} #${index + 1}${state.changed.has(`${path}.${index}`) ? '<span class="changed-dot" title="已修改"></span>' : ""}</label>
+                <textarea rows="8" data-path="${escapeHtml(`${path}.${index}`)}">${escapeHtml(greeting || "")}</textarea>
+                </div>
+              </div>
+              `).join("")
+              : '<div class="empty">沒有備選開場白。</div>'}
+          </div>
+        </div>
+      `;
+    }
+
     function render() {
       document.querySelectorAll(".tab").forEach((tab) => {
         tab.classList.toggle("active", tab.dataset.view === state.view);
@@ -784,7 +843,7 @@
         <div class="grid">
           <div class="metric"><strong>${escapeHtml(state.card.name || "未命名")}</strong><span>角色名稱</span></div>
           <div class="metric"><strong>${entries.length}</strong><span>世界書條目</span></div>
-          <div class="metric"><strong>${regex.length}</strong><span>正則腳本</span></div>
+          <div class="metric"><strong>${regex.length}</strong><span>正規表示式(正則)腳本</span></div>
           <div class="metric"><strong>${scripts.length}</strong><span>酒館助手腳本</span></div>
         </div>
         <div class="grid">
@@ -793,6 +852,7 @@
           <div class="metric"><strong>${tokenEstimate(allText).toLocaleString()}</strong><span>粗估 token</span></div>
           <div class="metric"><strong>${state.changed.size}</strong><span>已修改欄位</span></div>
         </div>
+        ${renderVocabChangesPanel()}
         <div class="panel">
           <div class="panel-head">
             <h2>格式風險</h2>
@@ -800,6 +860,35 @@
           </div>
           <div class="panel-body">
             ${warnings.length ? `<ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("")}</ul>` : "<p>目前沒有偵測到明顯格式風險。</p>"}
+          </div>
+        </div>
+      `;
+    }
+
+    function formatVocabPath(path) {
+      const match = path.match(/^data\.character_book\.entries\.(\d+)\.(.+)$/);
+      if (match) return `世界書 #${Number(match[1]) + 1} ${match[2]}`;
+      if (path === "data.character_book.name") return "世界書名稱";
+      return path;
+    }
+
+    function renderVocabChangesPanel() {
+      const changes = state.vocabChanges || [];
+      if (!changes.length) return "";
+      return `
+        <div class="panel">
+          <div class="panel-head">
+            <h2>世界書詞庫轉換紀錄</h2>
+            <span class="count">${changes.length} 筆替換規則</span>
+          </div>
+          <div class="panel-body vocab-report">
+            ${changes.map((change) => `
+              <div class="vocab-row">
+                <span>${escapeHtml(formatVocabPath(change.path))}<br><small class="count">${escapeHtml(change.phase)}</small></span>
+                <span><code>${escapeHtml(change.from)}</code> → <code>${escapeHtml(change.to)}</code></span>
+                <span class="count">${change.count} 次</span>
+              </div>
+            `).join("")}
           </div>
         </div>
       `;
@@ -821,11 +910,12 @@
             ${field("data.personality", "personality 性格摘要", data.personality, { rows: 5 })}
             ${field("data.mes_example", "mes_example 對話範例", data.mes_example, { rows: 8 })}
             ${field("data.creator_notes", "creator_notes / creatorcomment 使用說明", data.creator_notes ?? state.card.creatorcomment, { rows: 6 })}
-            ${arrayInput("data.alternate_greetings", "alternate_greetings 備選開場白", data.alternate_greetings || [])}
+            ${greetingInputs("data.alternate_greetings", "alternate_greetings 備選開場白", data.alternate_greetings || [])}
             <div class="field-grid">
               ${smallInput("data.creator", "creator", data.creator)}
               ${smallInput("data.extensions.world", "extensions.world", getExtensions().world)}
             </div>
+            ${renderVocabChangesPanel()}
           </div>
         </div>
       `;
@@ -914,7 +1004,7 @@
 
     function renderRegex() {
       const items = getRegexScripts();
-      return renderItemPanel("正則", items, "搜尋 scriptName、findRegex、replaceString", (item, index) => {
+      return renderItemPanel("正規表示式(正則)", items, "搜尋 scriptName、findRegex、replaceString", (item, index) => {
         const path = `data.extensions.regex_scripts.${index}`;
         return `
           <details class="item">
@@ -1072,6 +1162,24 @@
       }, text);
     }
 
+    function applyVocabReplacementWithReport(text, vocabs, path, phase) {
+      return vocabs.reduce((result, vocab) => {
+        if (!vocab?.cn || !vocab?.tw) return result;
+        if (vocab.cn === vocab.tw) return result;
+        const pattern = new RegExp(vocab.cn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+        const matches = result.match(pattern);
+        if (!matches) return result;
+        state.vocabChanges.push({
+          path,
+          phase,
+          from: vocab.cn,
+          to: vocab.tw,
+          count: matches.length
+        });
+        return result.replace(pattern, vocab.tw);
+      }, text);
+    }
+
     function replaceLanguageDirectives(text) {
       return text
         .replace(/簡體中文/g, "繁體中文")
@@ -1094,6 +1202,19 @@
       result = getConverter()(result);
       result = applyVocabReplacement(result, getVocabBucket("after"));
       return replaceLanguageDirectives(result);
+    }
+
+    function convertTextWithVocabReport(text, path) {
+      if (!hasChinese(text)) return text;
+      let result = applyVocabReplacementWithReport(text, getVocabBucket("before"), path, "OpenCC 前");
+      result = getConverter()(result);
+      result = applyVocabReplacementWithReport(result, getVocabBucket("after"), path, "OpenCC 後");
+      return replaceLanguageDirectives(result);
+    }
+
+    function convertTextOpenccOnly(text) {
+      if (!hasChinese(text)) return text;
+      return replaceLanguageDirectives(getConverter()(text));
     }
 
     function getPath(path) {
@@ -1121,61 +1242,66 @@
     function convertCharacterCardToTraditional() {
       if (!state.card) return;
       try {
-        let changed = 0;
-        [
-          "data.name",
-          "data.description",
-          "data.personality",
-          "data.scenario",
-          "data.first_mes",
-          "data.mes_example",
-          "data.creator_notes",
-          "data.system_prompt",
-          "data.post_history_instructions",
-          "data.creator",
-          "data.character_version",
-          "data.extensions.world",
-          "data.extensions.depth_prompt.prompt",
-          "data.character_book.name",
-        ].forEach((path) => {
-          if (convertPath(path)) changed += 1;
-        });
-
-        ["data.tags", "data.alternate_greetings", "data.group_only_greetings"].forEach((path) => {
-          if (convertArrayPath(path)) changed += 1;
-        });
-
-        getWorldEntries().forEach((entry, index) => {
-          const base = `data.character_book.entries.${index}`;
-          ["comment", "content"].forEach((fieldName) => {
-            if (convertPath(`${base}.${fieldName}`)) changed += 1;
-          });
-
-          if (entry.use_regex !== true) {
-            const keyField = Array.isArray(entry.keys) ? "keys" : "key";
-            const secondaryField = Array.isArray(entry.secondary_keys) ? "secondary_keys" : "keysecondary";
-            if (convertArrayPath(`${base}.${keyField}`)) changed += 1;
-            if (convertArrayPath(`${base}.${secondaryField}`)) changed += 1;
-          }
-        });
-
-        getTavernScripts().forEach((script, index) => {
-          const base = Array.isArray(getExtensions().TavernHelper_scripts)
-            ? `data.extensions.TavernHelper_scripts.${index}.value`
-            : `data.extensions.tavern_helper.scripts.${index}`;
-          ["name", "info"].forEach((fieldName) => {
-            if (convertPath(`${base}.${fieldName}`)) changed += 1;
-          });
-        });
-
+        state.vocabChanges = [];
+        const changed = convertStringValuesDeep(state.card);
         validateCard(false);
+        updateControls();
+        updateCounts();
         render();
         setMessage(changed
-          ? `安全簡→繁完成：已更新 ${changed} 個文字欄位，正則與 JavaScript 腳本內容已略過。`
-          : "沒有找到需要轉換的簡體文字，正則與 JavaScript 腳本內容已略過。");
+          ? `簡→繁完成：已更新 ${changed} 個文字欄位，regex 與酒館助手腳本已同步轉換；世界書已套用詞庫，其餘欄位只用 OpenCC。詞庫紀錄 ${state.vocabChanges.length} 筆。`
+          : "沒有找到需要轉換的簡體文字。");
       } catch (error) {
         setMessage(`轉換失敗：${error.message}`, "error");
       }
+    }
+
+    function shouldSkipTraditionalPath(path) {
+      return false;
+    }
+
+    function convertTextForPath(text, path) {
+      if (path.startsWith("data.character_book.")) return convertTextWithVocabReport(text, path);
+      return convertTextOpenccOnly(text);
+    }
+
+    function convertStringValuesDeep(target, path = "") {
+      if (typeof target === "string") {
+        if (shouldSkipTraditionalPath(path)) return 0;
+        const converted = convertTextForPath(target, path);
+        return converted === target ? 0 : converted;
+      }
+
+      if (!target || typeof target !== "object") return 0;
+
+      let changed = 0;
+      if (Array.isArray(target)) {
+        target.forEach((item, index) => {
+          const childPath = path ? `${path}.${index}` : String(index);
+          const converted = convertStringValuesDeep(item, childPath);
+          if (typeof converted === "string") {
+            target[index] = converted;
+            state.changed.add(childPath);
+            changed += 1;
+          } else {
+            changed += converted;
+          }
+        });
+        return changed;
+      }
+
+      Object.keys(target).forEach((key) => {
+        const childPath = path ? `${path}.${key}` : key;
+        const converted = convertStringValuesDeep(target[key], childPath);
+        if (typeof converted === "string") {
+          target[key] = converted;
+          state.changed.add(childPath);
+          changed += 1;
+        } else {
+          changed += converted;
+        }
+      });
+      return changed;
     }
 
     function validateCard(showMessage = true) {
@@ -1232,6 +1358,7 @@
       if (!state.original) return;
       state.card = deepClone(state.original);
       state.changed.clear();
+      state.vocabChanges = [];
       validateCard(false);
       updateCounts();
       render();

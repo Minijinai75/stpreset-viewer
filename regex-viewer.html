@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SillyTavern 正則腳本預覽器</title>
-    <meta name="description" content="上傳 SillyTavern Regex Script JSON 檔案，預覽、編輯、簡繁轉換、匯出正則腳本">
+    <title>SillyTavern 正規表示式(正則)腳本預覽器</title>
+    <meta name="description" content="上傳 SillyTavern Regex Script JSON 檔案，預覽、編輯、簡繁轉換、匯出正規表示式(正則)腳本">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <script src="lib/opencc-full.js"></script>
@@ -21,7 +21,6 @@
             openccConverter = function(text) { return text; };
         }
     </script>
-    <script src="lib/taiwan-vocabs.js"></script>
     <style>
         :root {
             --bg-primary: #edf8fc;
@@ -618,14 +617,14 @@
 <body class="toolbox-page">
     <div class="container">
         <header>
-            <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 正則腳本預覽器</h1>
+            <h1><i class="fa-solid fa-wand-magic-sparkles"></i> SillyTavern 正規表示式(正則)腳本預覽器</h1>
             <p class="subtitle">上傳 Regex Script JSON 檔案，預覽、編輯、簡繁轉換再匯出</p>
             <div class="instruction-box">
                 <h3><i class="fa-regular fa-lightbulb"></i> 簡易說明</h3>
                 <ul>
-                    <li>點擊 <strong>選擇檔案</strong> 或拖放正則腳本 JSON 檔案至此處（支援陣列格式 <code>[{...}]</code>）。</li>
+                    <li>點擊 <strong>選擇檔案</strong> 或拖放正規表示式(正則)腳本 JSON 檔案至此處（支援陣列格式 <code>[{...}]</code>）。</li>
                     <li>點擊腳本條目可展開查看 <strong>findRegex</strong>（搜尋式）與 <strong>replaceString</strong>（替換字串）詳細內容。</li>
-                    <li>使用 <strong>簡→繁轉換</strong>：只轉換 <code>scriptName</code> 與 <code>replaceString</code> 中的中文，<strong>不觸碰</strong> <code>findRegex</code> 中的正則符號。</li>
+                    <li>使用 <strong>簡→繁轉換</strong>：以 OpenCC 同步轉換 <code>scriptName</code>、<code>findRegex</code>、<code>replaceString</code> 中的中文，不套用詞庫。</li>
                     <li>完成後點擊 <strong>匯出</strong> 下載修改後的 JSON 檔案。</li>
                 </ul>
             </div>
@@ -661,7 +660,7 @@
 
     <script>
         // ===== 全域狀態 =====
-        let currentScripts = null;   // 正則腳本陣列
+        let currentScripts = null;   // 正規表示式(正則)腳本陣列
         let originalFileName = '';
         let editMode = false;
         let modifiedScripts = new Set(); // 已修改的腳本 index
@@ -749,7 +748,7 @@
                         <span id="editModeStatus">${editMode ? '編輯模式：可修改 scriptName 與 replaceString' : '點擊「編輯模式」開始修改腳本'}</span>
                     </div>
                     <div class="edit-mode-actions">
-                        <button class="btn btn-info" onclick="convertToTraditional()" title="轉換 scriptName 和 replaceString 為台灣繁體中文">
+                        <button class="btn btn-info" onclick="convertToTraditional()" title="以 OpenCC 同步轉換 scriptName、findRegex 和 replaceString">
                             <i class="fa-solid fa-language"></i> 簡→繁轉換
                         </button>
                         <button class="btn ${editMode ? 'btn-secondary' : 'btn-warning'}" onclick="toggleEditMode()">
@@ -923,7 +922,7 @@
                 return `
                     ${metaChips}
                     <div class="code-block-label regex-label">
-                        <i class="fa-solid fa-magnifying-glass"></i> findRegex（搜尋式 — 不參與簡繁轉換）
+                        <i class="fa-solid fa-magnifying-glass"></i> findRegex（搜尋式）
                     </div>
                     <div class="code-block regex-block ${!findRegex ? 'empty-block' : ''}">${findRegex ? escapeHtml(findRegex) : '（空）'}</div>
 
@@ -944,7 +943,7 @@
                         oninput="handleScriptEdit(${idx}, 'scriptName', this.value)">
 
                     <div class="code-block-label regex-label">
-                        <i class="fa-solid fa-magnifying-glass"></i> findRegex（搜尋式 — 不參與簡繁轉換）
+                        <i class="fa-solid fa-magnifying-glass"></i> findRegex（搜尋式）
                     </div>
                     <textarea class="code-editor" onclick="event.stopPropagation()"
                         oninput="handleScriptEdit(${idx}, 'findRegex', this.value)">${escapeHtml(findRegex)}</textarea>
@@ -1010,9 +1009,8 @@
             showToast('✅ 已匯出 ' + fileName, 'success');
         }
 
-        // ===== 簡→繁轉換（智慧版：不觸碰 findRegex 正則符號）=====
-        // 轉換欄位：scriptName、replaceString（只轉中文文字部分）
-        // 不轉換欄位：findRegex（正則可能含中文匹配字元，但轉換正則符號會破壞功能）
+        // ===== 簡→繁轉換（OpenCC only）=====
+        // 轉換欄位：scriptName、findRegex、replaceString、trimStrings。
 
         async function convertToTraditional() {
             if (!currentScripts) return;
@@ -1048,8 +1046,13 @@
                     count++;
                 }
 
+                // 轉換 findRegex 中的中文 literal；正規表示式符號不會被 OpenCC 改動
+                if (hasChinese(script.findRegex)) {
+                    converted.findRegex = convertText(script.findRegex);
+                    count++;
+                }
+
                 // 轉換 replaceString
-                // ⚠️ replaceString 可能含有 HTML/程式碼，智慧轉換只替換中文詞彙
                 if (hasChinese(script.replaceString)) {
                     converted.replaceString = convertText(script.replaceString);
                     count++;
@@ -1067,31 +1070,19 @@
 
             modifiedScripts = new Set(currentScripts.map((_, i) => i));
             renderScripts(currentScripts);
-            showToast(`✅ 已轉換 ${count} 個欄位（findRegex 保持不變）`, 'success');
+            showToast(`✅ 已用 OpenCC 轉換 ${count} 個欄位`, 'success');
         }
 
         function convertText(text) {
             if (!text) return text;
             let result = text;
 
-            // 1. linguipediaVocabs（簡體詞彙，OpenCC 前）
-            if (window.linguipediaVocabs) {
-                result = applyVocabReplacement(result, linguipediaVocabs);
-            }
-
-            // 2. OpenCC s2twp
             try {
                 result = openccConverter(result);
             } catch(e) {
                 console.warn('OpenCC 轉換失敗:', e);
             }
 
-            // 3. taiwanChinaVocabs（繁體在地化詞彙，OpenCC 後）
-            if (window.taiwanChinaVocabs) {
-                result = applyVocabReplacement(result, taiwanChinaVocabs);
-            }
-
-            // 4. 語言指令替換
             result = replaceLanguageDirectives(result);
 
             return result;
@@ -1100,16 +1091,6 @@
         function hasChinese(text) {
             if (!text) return false;
             return /[\u4e00-\u9fff]/.test(text);
-        }
-
-        function applyVocabReplacement(text, vocabs) {
-            if (!vocabs || !text) return text;
-            let result = text;
-            for (const { cn, tw } of vocabs) {
-                if (!cn || !tw || cn === tw) continue;
-                result = result.split(cn).join(tw);
-            }
-            return result;
         }
 
         function replaceLanguageDirectives(text) {

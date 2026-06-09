@@ -570,6 +570,30 @@
             color: var(--text-primary);
         }
 
+        .vocab-report {
+            display: grid;
+            gap: 0.55rem;
+        }
+
+        .vocab-row {
+            display: grid;
+            grid-template-columns: minmax(10rem, 1.2fr) minmax(0, 1fr) auto;
+            gap: 0.65rem;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 0.55rem;
+            font-size: 0.86rem;
+        }
+
+        .vocab-row code {
+            font-family: 'Fira Code', monospace;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.15rem 0.35rem;
+            overflow-wrap: anywhere;
+        }
+
         /* Footer */
         footer {
             text-align: center;
@@ -594,6 +618,7 @@
             .entry-tokens { display: none; }
             .stats-bar { flex-direction: column; }
             .edit-mode-bar { flex-direction: column; align-items: stretch; }
+            .vocab-row { grid-template-columns: 1fr; }
         }
     </style>
     <link rel="stylesheet" href="assets/toolbox-theme.css">
@@ -633,6 +658,7 @@
         let originalFileName = '';
         let editMode = false;
         let modifiedEntries = new Set();
+        let vocabChanges = [];
 
         // 拖放處理
         const uploadSection = document.getElementById('uploadSection');
@@ -671,6 +697,7 @@
                     currentWorldInfo = json;
                     editMode = false;
                     modifiedEntries.clear();
+                    vocabChanges = [];
                     renderWorldInfo(json);
                     clearError();
                 } catch (error) {
@@ -714,6 +741,9 @@
 
             // Stats
             html += renderStats(entries);
+
+            // Vocab replacement report
+            html += renderVocabChanges();
 
             // Entries
             html += renderEntryManager(entries);
@@ -769,6 +799,27 @@
                     `).join('')}
                 </div>
             `;
+        }
+
+        function formatVocabPath(path) {
+            const match = path.match(/^entries\.([^.]+)\.(.+)$/);
+            if (!match) return path;
+            return `Entry ${match[1]} ${match[2]}`;
+        }
+
+        function renderVocabChanges() {
+            if (!vocabChanges.length) return '';
+            return renderSection('世界書詞庫轉換紀錄', `
+                <div class="vocab-report">
+                    ${vocabChanges.map(change => `
+                        <div class="vocab-row">
+                            <span>${escapeHtml(formatVocabPath(change.path))}<br><small style="color:var(--text-muted);">${escapeHtml(change.phase)}</small></span>
+                            <span><code>${escapeHtml(change.from)}</code> → <code>${escapeHtml(change.to)}</code></span>
+                            <span style="color:var(--text-muted);">${change.count} 次</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `, 'fa-list-check');
         }
 
         function renderEntryManager(entries) {
@@ -1028,6 +1079,26 @@
             return result;
         }
 
+        function applyVocabReplacementWithReport(text, vocabs, path, phase) {
+            if (!vocabs || !Array.isArray(vocabs) || vocabs.length === 0) return text;
+            let result = text;
+            vocabs.forEach(vocab => {
+                if (!vocab || !vocab.cn || !vocab.tw || vocab.cn === vocab.tw) return;
+                const regex = new RegExp(vocab.cn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                const matches = result.match(regex);
+                if (!matches) return;
+                vocabChanges.push({
+                    path,
+                    phase,
+                    from: vocab.cn,
+                    to: vocab.tw,
+                    count: matches.length
+                });
+                result = result.replace(regex, vocab.tw);
+            });
+            return result;
+        }
+
         function replaceLanguageDirectives(text) {
             return text
                 .replace(/簡體中文/g, '繁體中文')
@@ -1055,6 +1126,21 @@
             // 第四層：語言指令替換
             result = replaceLanguageDirectives(result);
             return result;
+        }
+
+        function convertTextWithVocabReport(text, path) {
+            if (!text || !hasChinese(text)) return text;
+            let result = text;
+            if (typeof linguipediaVocabs !== 'undefined') {
+                result = applyVocabReplacementWithReport(result, linguipediaVocabs, path, 'OpenCC 前');
+            }
+            if (openccConverter) {
+                result = openccConverter(result);
+            }
+            if (typeof taiwanChinaVocabs !== 'undefined') {
+                result = applyVocabReplacementWithReport(result, taiwanChinaVocabs, path, 'OpenCC 後');
+            }
+            return replaceLanguageDirectives(result);
         }
 
         async function convertToTraditional() {
@@ -1085,30 +1171,51 @@
 
             try {
                 let convertedCount = 0;
+                vocabChanges = [];
 
                 for (const [key, entry] of Object.entries(currentWorldInfo.entries)) {
                     // 轉換 comment
                     if (entry.comment && hasChinese(entry.comment)) {
-                        entry.comment = convertText(entry.comment);
+                        entry.comment = convertTextWithVocabReport(entry.comment, `entries.${key}.comment`);
                         modifiedEntries.add(key);
                         convertedCount++;
                     }
 
                     // 轉換 content
                     if (entry.content && hasChinese(entry.content)) {
-                        entry.content = convertText(entry.content);
+                        entry.content = convertTextWithVocabReport(entry.content, `entries.${key}.content`);
                         modifiedEntries.add(key);
                         convertedCount++;
                     }
 
                     // 轉換 key
                     if (entry.key && Array.isArray(entry.key)) {
-                        entry.key = entry.key.map(k => hasChinese(k) ? convertText(k) : k);
+                        let changed = false;
+                        entry.key = entry.key.map((k, index) => {
+                            if (!hasChinese(k)) return k;
+                            const converted = convertTextWithVocabReport(k, `entries.${key}.key.${index}`);
+                            if (converted !== k) changed = true;
+                            return converted;
+                        });
+                        if (changed) {
+                            modifiedEntries.add(key);
+                            convertedCount++;
+                        }
                     }
 
                     // 轉換 keysecondary
                     if (entry.keysecondary && Array.isArray(entry.keysecondary)) {
-                        entry.keysecondary = entry.keysecondary.map(k => hasChinese(k) ? convertText(k) : k);
+                        let changed = false;
+                        entry.keysecondary = entry.keysecondary.map((k, index) => {
+                            if (!hasChinese(k)) return k;
+                            const converted = convertTextWithVocabReport(k, `entries.${key}.keysecondary.${index}`);
+                            if (converted !== k) changed = true;
+                            return converted;
+                        });
+                        if (changed) {
+                            modifiedEntries.add(key);
+                            convertedCount++;
+                        }
                     }
                 }
 
@@ -1123,7 +1230,7 @@
                 // 重新渲染
                 renderWorldInfo(currentWorldInfo);
 
-                statusEl.innerHTML = `<i class="fa-solid fa-check"></i> 轉換完成！已處理 ${convertedCount} 個欄位`;
+                statusEl.innerHTML = `<i class="fa-solid fa-check"></i> 轉換完成！已處理 ${convertedCount} 個欄位，詞庫紀錄 ${vocabChanges.length} 筆`;
                 statusEl.style.color = 'var(--success)';
                 setTimeout(() => {
                     statusEl.textContent = originalText;

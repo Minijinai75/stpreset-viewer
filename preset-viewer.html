@@ -1020,9 +1020,9 @@
                         <span id="editModeStatus">${editMode ? '編輯模式：可修改內容、切換開關' : '點擊「編輯模式」開始修改 Prompts 和設定'}</span>
                     </div>
                     <div class="edit-mode-actions">
-                        <button class="btn btn-info" onclick="convertToTraditional()" title="轉換 Prompts 與預設文字；正則 findRegex / replaceString 會保留原文">
+                        <button class="btn btn-info" onclick="convertToTraditional()" title="轉換 Prompts、預設文字與正規表示式(正則)腳本；僅使用 OpenCC 字形轉換">
                             <i class="fa-solid fa-language"></i>
-                            安全簡→繁
+                            簡→繁轉換
                         </button>
                         <button class="btn ${editMode ? 'btn-secondary' : 'btn-warning'}" onclick="toggleEditMode()">
                             <i class="fa-solid ${editMode ? 'fa-eye' : 'fa-pen'}"></i>
@@ -1653,9 +1653,23 @@
                     currentPreset.name = text;
                 }
 
-                // 正則可能包含語法、捕獲群組、HTML/JS/CSS 美化片段；安全轉換預設保留原文。
+                // 正規表示式(正則)腳本同步做 OpenCC 字形轉換，避免 prompt 與美化匹配文字不同步。
                 if (currentPreset.extensions?.regex_scripts && Array.isArray(currentPreset.extensions.regex_scripts)) {
-                    console.log('已略過 regex_scripts，避免破壞 findRegex 或 replaceString:', currentPreset.extensions.regex_scripts.length, '個腳本');
+                    let convertedRegexScripts = 0;
+                    currentPreset.extensions.regex_scripts.forEach(script => {
+                        let changed = false;
+                        ['scriptName', 'findRegex', 'replaceString'].forEach(field => {
+                            if (typeof script[field] === 'string' && hasChinese(script[field])) {
+                                const text = convertChineseText(script[field], converter);
+                                if (text !== script[field]) {
+                                    script[field] = text;
+                                    changed = true;
+                                }
+                            }
+                        });
+                        if (changed) convertedRegexScripts++;
+                    });
+                    console.log('已同步轉換 regex_scripts:', convertedRegexScripts, '/', currentPreset.extensions.regex_scripts.length, '個腳本');
                 }
 
                 // 轉換 new_chat_prompt
@@ -1685,7 +1699,7 @@
                 renderPreset(currentPreset);
 
                 // 顯示成功訊息
-                statusEl.innerHTML = '<i class="fa-solid fa-check"></i> 轉換完成！已套用繁體字形';
+                statusEl.innerHTML = '<i class="fa-solid fa-check"></i> 轉換完成！已套用繁體字形並同步正規表示式(正則)';
                 statusEl.style.color = 'var(--success)';
                 setTimeout(() => {
                     statusEl.textContent = originalText;

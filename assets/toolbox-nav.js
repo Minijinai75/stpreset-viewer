@@ -4,15 +4,15 @@
     { id: 'preset', label: '預設', href: 'preset-viewer.html' },
     { id: 'worldinfo', label: '世界書', href: 'worldinfo-viewer.html' },
     { id: 'character', label: '角色卡', href: 'character-card-viewer.html' },
-    { id: 'regex', label: '正則', href: 'regex-viewer.html' },
+    { id: 'regex', label: '正規表示式(正則)', href: 'regex-viewer.html' },
   ];
 
   const notes = {
-    index: ['INDEX', '選擇要處理的 SillyTavern 內容類型。所有檔案都只在瀏覽器本機解析，不會上傳。'],
-    preset: ['PRESET', '預設頁會轉換 prompt 與常用文字欄位；正則 findRegex / replaceString 會保留原文，避免破壞美化規則。'],
+    index: ['INDEX', '選擇要處理的 SillyTavern 內容類型。所有檔案都只在瀏覽器本機處理轉換，不會上傳。'],
+    preset: ['PRESET', '預設頁會轉換 prompt、常用文字欄位與正規表示式(正則)腳本。'],
     worldinfo: ['WORLD', '世界書頁適合逐條檢查 comment、key、content 與啟用狀態，再匯出保留原 JSON 結構的版本。'],
-    character: ['CARD', '角色卡頁會拆成角色、世界書、正則、酒館助手腳本；安全轉繁會略過正則與 JavaScript。'],
-    regex: ['REGEX', '正則頁用來單獨預覽與手動修正腳本；findRegex 會保持原文，避免破壞規則。'],
+    character: ['CARD', '角色卡頁會拆成角色、世界書、正規表示式(正則)、酒館助手腳本進行轉換。'],
+    regex: ['REGEX', '正規表示式(正則)頁用來單獨預覽與手動修正腳本；findRegex 會保持原文，避免破壞規則。'],
   };
 
   function currentPageId() {
@@ -33,7 +33,7 @@
         <a class="toolbox-brand" href="index.html" aria-label="回到工具箱首頁">
           <span class="toolbox-brand-copy">
             <strong>SillyTavern 繁中轉換工具箱</strong>
-            <span>空藍雲朵風的本機 JSON 工作台</span>
+            <span>Made with care by Minijinai75</span>
           </span>
         </a>
         <div class="toolbox-links" aria-label="頁面導覽">
