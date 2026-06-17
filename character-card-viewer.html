@@ -459,10 +459,10 @@
       </div>
 
       <div id="dropzone" class="dropzone">
-        <p><strong>拖放 JSON 到這裡</strong></p>
+        <p><strong>拖放 PNG 或 JSON 到這裡</strong></p>
         <p>或選擇本機角色卡檔案</p>
-        <button class="primary" id="pickFile">選擇 JSON</button>
-        <input class="file-input" id="fileInput" type="file" accept=".json,application/json">
+        <button class="primary" id="pickFile">選擇檔案</button>
+        <input class="file-input" id="fileInput" type="file" accept=".json,.png,application/json,image/png">
       </div>
 
       <div class="toolbar">
@@ -705,8 +705,42 @@
       setMessage(`已載入 ${fileName}`);
     }
 
+    function extractPngCharaData(buffer) {
+      const view = new DataView(buffer);
+      const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+      for (let i = 0; i < 8; i++) {
+        if (view.getUint8(i) !== sig[i]) throw new Error("不是有效的 PNG 檔案");
+      }
+      let offset = 8;
+      let ccv3Data = null;
+      let charaData = null;
+      while (offset < buffer.byteLength) {
+        const length = view.getUint32(offset);
+        const typeBytes = new Uint8Array(buffer, offset + 4, 4);
+        const type = String.fromCharCode(...typeBytes);
+        if (type === "tEXt") {
+          const chunkData = new Uint8Array(buffer, offset + 8, length);
+          const nullIdx = chunkData.indexOf(0);
+          if (nullIdx > 0) {
+            const keyword = String.fromCharCode(...chunkData.slice(0, nullIdx));
+            const textBytes = chunkData.slice(nullIdx + 1);
+            const text = String.fromCharCode(...textBytes);
+            if (keyword.toLowerCase() === "ccv3") ccv3Data = text;
+            else if (keyword.toLowerCase() === "chara") charaData = text;
+          }
+        }
+        offset += 12 + length;
+      }
+      const b64 = ccv3Data || charaData;
+      if (!b64) throw new Error("PNG 裡找不到角色卡資料（沒有 chara/ccv3 tEXt chunk）");
+      return JSON.parse(atob(b64));
+    }
+
     async function parseFile(file) {
       const buffer = await file.arrayBuffer();
+      if (file.name.toLowerCase().endsWith(".png") || file.type === "image/png") {
+        return extractPngCharaData(buffer);
+      }
       const encodings = ["utf-8", "big5"];
       const errors = [];
       for (const encoding of encodings) {
@@ -726,7 +760,7 @@
         const card = await parseFile(file);
         loadCard(card, file.name);
       } catch (error) {
-        setMessage(`無法解析 JSON：${error.message}`, "error");
+        setMessage(`無法解析角色卡：${error.message}`, "error");
       }
     }
 
