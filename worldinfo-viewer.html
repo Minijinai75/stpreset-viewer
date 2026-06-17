@@ -577,7 +577,7 @@
 
         .vocab-row {
             display: grid;
-            grid-template-columns: minmax(10rem, 1.2fr) minmax(0, 1fr) auto;
+            grid-template-columns: minmax(10rem, 1.2fr) minmax(0, 1fr) auto auto;
             gap: 0.65rem;
             align-items: center;
             border-top: 1px solid var(--border);
@@ -807,15 +807,30 @@
             return `Entry ${match[1]} ${match[2]}`;
         }
 
+        function undoVocabChange(index) {
+            const change = vocabChanges[index];
+            if (!change || !currentWorldInfo) return;
+            const parts = change.path.split('.');
+            let target = currentWorldInfo;
+            for (let i = 0; i < parts.length - 1; i++) target = target?.[parts[i]];
+            const lastKey = parts[parts.length - 1];
+            if (!target || typeof target[lastKey] !== 'string') return;
+            const pattern = new RegExp(change.to.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+            target[lastKey] = target[lastKey].replace(pattern, change.from);
+            vocabChanges.splice(index, 1);
+            renderWorldInfo(currentWorldInfo);
+        }
+
         function renderVocabChanges() {
             if (!vocabChanges.length) return '';
             return renderSection('世界書詞庫轉換紀錄', `
                 <div class="vocab-report">
-                    ${vocabChanges.map(change => `
+                    ${vocabChanges.map((change, i) => `
                         <div class="vocab-row">
                             <span>${escapeHtml(formatVocabPath(change.path))}<br><small style="color:var(--text-muted);">${escapeHtml(change.phase)}</small></span>
                             <span><code>${escapeHtml(change.from)}</code> → <code>${escapeHtml(change.to)}</code></span>
                             <span style="color:var(--text-muted);">${change.count} 次</span>
+                            <button onclick="undoVocabChange(${i})" style="padding:0.3rem 0.6rem;font-size:0.78rem;border-radius:6px;border:1px solid #d9aaaa;background:#fff5f4;color:var(--danger);cursor:pointer;white-space:nowrap;">還原</button>
                         </div>
                     `).join('')}
                 </div>

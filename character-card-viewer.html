@@ -285,13 +285,26 @@
 
     .vocab-row {
       display: grid;
-      grid-template-columns: minmax(9rem, 1.2fr) minmax(0, 1fr) auto;
+      grid-template-columns: minmax(9rem, 1.2fr) minmax(0, 1fr) auto auto;
       gap: 0.55rem;
       align-items: center;
       border-top: 1px solid var(--line);
       padding-top: 0.5rem;
       font-size: 0.86rem;
     }
+
+    .vocab-undo {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.78rem;
+      border-radius: 6px;
+      border: 1px solid #d9aaaa;
+      background: #fff5f4;
+      color: var(--danger);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .vocab-undo:hover { background: #ffe0e0; border-color: var(--danger); }
 
     .vocab-row code {
       font-family: var(--mono);
@@ -469,6 +482,7 @@
         <div class="row">
           <button id="loadSample">載入範例</button>
           <button id="exportJson" class="primary" disabled>匯出 JSON</button>
+          <button id="exportPng" class="primary" disabled>匯出 PNG</button>
         </div>
         <div class="row">
           <button id="copyJson" disabled>複製 JSON</button>
@@ -502,6 +516,7 @@
     const state = {
       card: null,
       original: null,
+      pngBuffer: null,
       fileName: "mvu-card.json",
       view: "overview",
       query: "",
@@ -676,6 +691,7 @@
     function updateControls() {
       const loaded = Boolean(state.card);
       $("exportJson").disabled = !loaded;
+      $("exportPng").disabled = !loaded || !state.pngBuffer;
       $("copyJson").disabled = !loaded;
       $("resetCard").disabled = !loaded || !state.original;
       $("convertTraditional").disabled = !loaded;
@@ -705,6 +721,14 @@
       setMessage(`已載入 ${fileName}`);
     }
 
+    function uint8ToStr(arr) {
+      const chunks = [];
+      for (let i = 0; i < arr.length; i += 8192) {
+        chunks.push(String.fromCharCode.apply(null, arr.subarray(i, i + 8192)));
+      }
+      return chunks.join("");
+    }
+
     function extractPngCharaData(buffer) {
       const view = new DataView(buffer);
       const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -714,33 +738,149 @@
       let offset = 8;
       let ccv3Data = null;
       let charaData = null;
-      while (offset < buffer.byteLength) {
+      while (offset + 12 <= buffer.byteLength) {
         const length = view.getUint32(offset);
         const typeBytes = new Uint8Array(buffer, offset + 4, 4);
-        const type = String.fromCharCode(...typeBytes);
+        const type = String.fromCharCode(typeBytes[0], typeBytes[1], typeBytes[2], typeBytes[3]);
         if (type === "tEXt") {
           const chunkData = new Uint8Array(buffer, offset + 8, length);
           const nullIdx = chunkData.indexOf(0);
           if (nullIdx > 0) {
-            const keyword = String.fromCharCode(...chunkData.slice(0, nullIdx));
-            const textBytes = chunkData.slice(nullIdx + 1);
-            const text = String.fromCharCode(...textBytes);
+            const keyword = String.fromCharCode.apply(null, chunkData.subarray(0, nullIdx));
+            const text = uint8ToStr(chunkData.subarray(nullIdx + 1));
             if (keyword.toLowerCase() === "ccv3") ccv3Data = text;
             else if (keyword.toLowerCase() === "chara") charaData = text;
           }
         }
         offset += 12 + length;
+        if (type === "IEND") break;
       }
       const b64 = ccv3Data || charaData;
       if (!b64) throw new Error("PNG 裡找不到角色卡資料（沒有 chara/ccv3 tEXt chunk）");
-      return JSON.parse(atob(b64));
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const json = new TextDecoder("utf-8").decode(bytes);
+      return JSON.parse(json);
+    }
+
+    const crc32Table = (() => {
+      const t = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let j = 0; j < 8; j++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+        t[i] = c;
+      }
+      return t;
+    })();
+
+    function crc32(buf) {
+      let c = 0xFFFFFFFF;
+      for (let i = 0; i < buf.length; i++) c = crc32Table[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+      return (c ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function buildPngWithNewCard(originalBuffer, cardJson) {
+      const jsonStr = JSON.stringify(cardJson);
+      const jsonBytes = new TextEncoder().encode(jsonStr);
+      const b64 = btoa(String.fromCharCode.apply(null, jsonBytes.length <= 8192
+        ? jsonBytes
+        : (() => { const arr = []; for (let i = 0; i < jsonBytes.length; i++) arr.push(jsonBytes[i]); return arr; })()
+      ));
+      let b64Str = "";
+      if (jsonBytes.length <= 8192) {
+        b64Str = btoa(String.fromCharCode.apply(null, jsonBytes));
+      } else {
+        const chunks = [];
+        for (let i = 0; i < jsonBytes.length; i += 8192) {
+          chunks.push(String.fromCharCode.apply(null, jsonBytes.subarray(i, i + 8192)));
+        }
+        b64Str = btoa(chunks.join(""));
+      }
+
+      function makeTEXtChunk(keyword, text) {
+        const kwBytes = new TextEncoder().encode(keyword);
+        const textBytes = new TextEncoder().encode(text);
+        const data = new Uint8Array(kwBytes.length + 1 + textBytes.length);
+        data.set(kwBytes, 0);
+        data[kwBytes.length] = 0;
+        data.set(textBytes, kwBytes.length + 1);
+
+        const typeAndData = new Uint8Array(4 + data.length);
+        typeAndData.set(new TextEncoder().encode("tEXt"), 0);
+        typeAndData.set(data, 4);
+
+        const chunk = new Uint8Array(12 + data.length);
+        const view = new DataView(chunk.buffer);
+        view.setUint32(0, data.length);
+        chunk.set(typeAndData, 4);
+        view.setUint32(8 + data.length, crc32(typeAndData));
+        return chunk;
+      }
+
+      const src = new DataView(originalBuffer);
+      const parts = [new Uint8Array(originalBuffer, 0, 8)];
+      let offset = 8;
+      let insertedBefore = false;
+
+      while (offset + 12 <= originalBuffer.byteLength) {
+        const length = src.getUint32(offset);
+        const typeBytes = new Uint8Array(originalBuffer, offset + 4, 4);
+        const type = String.fromCharCode(typeBytes[0], typeBytes[1], typeBytes[2], typeBytes[3]);
+        const chunkTotal = 12 + length;
+
+        if (type === "tEXt") {
+          const chunkData = new Uint8Array(originalBuffer, offset + 8, length);
+          const nullIdx = chunkData.indexOf(0);
+          if (nullIdx > 0) {
+            const kw = String.fromCharCode.apply(null, chunkData.subarray(0, nullIdx));
+            if (kw.toLowerCase() === "chara" || kw.toLowerCase() === "ccv3") {
+              offset += chunkTotal;
+              continue;
+            }
+          }
+        }
+
+        if (type === "IEND" && !insertedBefore) {
+          parts.push(makeTEXtChunk("chara", b64Str));
+          insertedBefore = true;
+        }
+
+        parts.push(new Uint8Array(originalBuffer, offset, chunkTotal));
+        offset += chunkTotal;
+        if (type === "IEND") break;
+      }
+
+      const totalLen = parts.reduce((s, p) => s + p.length, 0);
+      const out = new Uint8Array(totalLen);
+      let pos = 0;
+      for (const p of parts) { out.set(p, pos); pos += p.length; }
+      return out;
+    }
+
+    function exportPng() {
+      if (!state.pngBuffer || !state.card) return;
+      const pngBytes = buildPngWithNewCard(state.pngBuffer, state.card);
+      const blob = new Blob([pngBytes], { type: "image/png" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const base = state.fileName.replace(/\.(png|json)$/i, "");
+      link.href = url;
+      link.download = `${base}_edited.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setMessage(`已匯出 ${link.download}`);
     }
 
     async function parseFile(file) {
       const buffer = await file.arrayBuffer();
       if (file.name.toLowerCase().endsWith(".png") || file.type === "image/png") {
+        state.pngBuffer = buffer;
         return extractPngCharaData(buffer);
       }
+      state.pngBuffer = null;
       const encodings = ["utf-8", "big5"];
       const errors = [];
       for (const encoding of encodings) {
@@ -906,6 +1046,20 @@
       return path;
     }
 
+    function undoVocabChange(index) {
+      const change = state.vocabChanges[index];
+      if (!change) return;
+      const current = getPath(change.path);
+      if (typeof current !== "string") return;
+      const pattern = new RegExp(change.to.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+      const reverted = current.replace(pattern, change.from);
+      setPath(change.path, reverted);
+      state.vocabChanges.splice(index, 1);
+      markChanged(change.path);
+      render();
+      setMessage(`已還原「${change.to}」→「${change.from}」`);
+    }
+
     function renderVocabChangesPanel() {
       const changes = state.vocabChanges || [];
       if (!changes.length) return "";
@@ -916,11 +1070,12 @@
             <span class="count">${changes.length} 筆替換規則</span>
           </div>
           <div class="panel-body vocab-report">
-            ${changes.map((change) => `
+            ${changes.map((change, i) => `
               <div class="vocab-row">
                 <span>${escapeHtml(formatVocabPath(change.path))}<br><small class="count">${escapeHtml(change.phase)}</small></span>
                 <span><code>${escapeHtml(change.from)}</code> → <code>${escapeHtml(change.to)}</code></span>
                 <span class="count">${change.count} 次</span>
+                <button class="vocab-undo" onclick="undoVocabChange(${i})">還原</button>
               </div>
             `).join("")}
           </div>
@@ -1411,6 +1566,7 @@
     $("fileInput").addEventListener("change", (event) => handleFile(event.target.files[0]));
     $("loadSample").addEventListener("click", () => loadCard(deepClone(sampleCard), "sample-card.json"));
     $("exportJson").addEventListener("click", exportCard);
+    $("exportPng").addEventListener("click", exportPng);
     $("copyJson").addEventListener("click", copyCard);
     $("resetCard").addEventListener("click", resetCard);
     $("convertTraditional").addEventListener("click", convertCharacterCardToTraditional);
