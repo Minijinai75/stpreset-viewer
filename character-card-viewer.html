@@ -783,10 +783,6 @@
     function buildPngWithNewCard(originalBuffer, cardJson) {
       const jsonStr = JSON.stringify(cardJson);
       const jsonBytes = new TextEncoder().encode(jsonStr);
-      const b64 = btoa(String.fromCharCode.apply(null, jsonBytes.length <= 8192
-        ? jsonBytes
-        : (() => { const arr = []; for (let i = 0; i < jsonBytes.length; i++) arr.push(jsonBytes[i]); return arr; })()
-      ));
       let b64Str = "";
       if (jsonBytes.length <= 8192) {
         b64Str = btoa(String.fromCharCode.apply(null, jsonBytes));
